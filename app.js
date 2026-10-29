@@ -57,9 +57,18 @@
   }
   function section(parent, key) {
     const node = el('section', null, 'lesson-section');
-    node.append(el('h2', t(key)));
+    node.id = `sec-${key}`;
+    const heading = el('h2', t(key));
+    heading.id = `${key}-heading`;
+    heading.tabIndex = -1;
+    node.append(heading);
     parent.append(node);
     return node;
+  }
+  // Deep content is optional per session; English falls back to Spanish while a translation is missing.
+  function deepFor(session) {
+    const deep = D.deep || {};
+    return (deep[lang] && deep[lang][session.id]) || (deep.es && deep.es[session.id]) || null;
   }
   function codeBlock(example) {
     const box = el('div', null, 'code-block');
@@ -130,27 +139,45 @@
     map.append(grid);
     main.append(map);
   }
-  function renderQuiz(parent, session) {
-    const area = section(parent, 'quiz');
-    area.append(el('p', t('quizIntro', { percent: Math.round(D.quiz.PASS_RATIO * 100) })));
-    if (state(session).quiz) area.append(el('p', t('best', { score: state(session).quiz.best, total: state(session).quiz.total }), 'best'));
-    let current = quizStates.get(session.id);
+  function source(parent, item) {
+    const a = link(item.label, item.url, 'source');
+    a.target = '_blank';
+    a.rel = 'noopener noreferrer';
+    parent.append(a);
+    return a;
+  }
+  function sourceLine(items) {
+    const line = el('p', `${t(items.length > 1 ? 'sources' : 'source')} `, 'source-line');
+    items.forEach((item, index) => {
+      if (index) line.append(' · ');
+      source(line, item);
+    });
+    return line;
+  }
+  // One graded practice block, used by the session quiz and the certification practice.
+  // Each block keeps its own answers and best score under its own progress id.
+  function renderPractice(area, { key, id, questions, intro }) {
+    area.append(el('p', intro));
+    const record = progress.sessions[id] || {};
+    if (record.quiz) area.append(el('p', t('best', { score: record.quiz.best, total: record.quiz.total }), 'best'));
+    let current = quizStates.get(id);
     if (!current) {
       current = { answers: [], submitted: false };
-      quizStates.set(session.id, current);
+      quizStates.set(id, current);
     }
-    const result = current.submitted ? D.quiz.grade(session.quiz, current.answers) : null;
+    const result = current.submitted ? D.quiz.grade(questions, current.answers) : null;
     const form = el('form');
     // We provide a localized aggregate message rather than browser validation text.
     form.noValidate = true;
-    session.quiz.forEach((question, index) => {
+    questions.forEach((question, index) => {
       const field = el('fieldset');
       field.append(el('legend', `${index + 1}. ${question.question}`));
+      if (question.domain) field.append(el('p', t('domain', { domain: question.domain }), 'domain'));
       question.options.forEach((option, optionIndex) => {
         const label = el('label', null, 'option');
         const input = el('input');
         input.type = 'radio';
-        input.name = `question-${index}`;
+        input.name = `${key}-question-${index}`;
         input.value = String(optionIndex);
         input.checked = current.answers[index] === optionIndex;
         input.disabled = current.submitted;
@@ -175,32 +202,146 @@
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       if (current.submitted) return;
-      if (session.quiz.some((_, index) => !Number.isInteger(current.answers[index]))) {
+      const missing = questions.findIndex((_, index) => !Number.isInteger(current.answers[index]));
+      if (missing >= 0) {
         error.textContent = t('answerAll');
-        const missing = session.quiz.findIndex((_, index) => !Number.isInteger(current.answers[index]));
-        form.querySelector(`input[name="question-${missing}"]`).focus();
+        form.querySelector(`input[name="${key}-question-${missing}"]`).focus();
         return;
       }
       current.submitted = true;
-      const grade = D.quiz.grade(session.quiz, current.answers);
-      save(D.progress.recordQuiz(progress, session.id, grade.score, grade.total));
-      render(false, 'quiz-result');
+      const grade = D.quiz.grade(questions, current.answers);
+      save(D.progress.recordQuiz(progress, id, grade.score, grade.total));
+      render(false, `${key}-result`);
     });
     area.append(form);
     if (result) {
       const output = el('div', null, 'quiz-result');
-      output.id = 'quiz-result';
+      output.id = `${key}-result`;
       output.tabIndex = -1;
       output.setAttribute('role', 'status');
       output.append(el('h3', t('score', result)), el('p', result.passed ? t('passed') : t('notPassed')));
       output.append(button(t('retry'), () => {
-        quizStates.set(session.id, { answers: [], submitted: false });
-        render(false, 'quiz-heading');
+        quizStates.set(id, { answers: [], submitted: false });
+        render(false, `${key}-heading`);
       }));
       area.append(output);
     }
-    area.querySelector('h2').id = 'quiz-heading';
-    area.querySelector('h2').tabIndex = -1;
+  }
+  function renderDeepDive(article, deep) {
+    const area = section(article, 'deepDive');
+    deep.deepDive.forEach((item) => {
+      const topic = el('article', null, 'deep-item');
+      topic.append(el('h3', item.title));
+      item.body.forEach((paragraph) => topic.append(el('p', paragraph)));
+      topic.append(sourceLine([item.source]));
+      area.append(topic);
+    });
+  }
+  function renderDiagram(article, diagram) {
+    const area = section(article, 'diagram');
+    const figure = el('figure', null, 'diagram');
+    figure.setAttribute('aria-label', diagram.title);
+    const layers = el('div', null, 'layers');
+    diagram.layers.forEach((layer, index) => {
+      if (index) {
+        const arrow = el('span', '→', 'arrow');
+        arrow.setAttribute('aria-hidden', 'true');
+        layers.append(arrow);
+      }
+      const box = el('div', null, 'layer');
+      box.append(el('h3', layer.label), list(layer.nodes));
+      layers.append(box);
+    });
+    figure.append(el('p', diagram.title, 'diagram-title'), layers, el('figcaption', diagram.caption));
+    area.append(figure);
+  }
+  function renderComparison(article, comparison) {
+    const area = section(article, 'comparison');
+    // The scroll container keeps wide tables usable on small screens.
+    const scroller = el('div', null, 'comparison');
+    scroller.tabIndex = 0;
+    scroller.setAttribute('role', 'region');
+    scroller.setAttribute('aria-label', comparison.title);
+    const table = el('table');
+    table.append(el('caption', comparison.title));
+    const head = el('thead');
+    const headRow = el('tr');
+    comparison.headers.forEach((header) => {
+      const th = el('th', header);
+      th.scope = 'col';
+      headRow.append(th);
+    });
+    head.append(headRow);
+    const body = el('tbody');
+    comparison.rows.forEach((row) => {
+      const tr = el('tr');
+      row.forEach((cell, index) => {
+        const node = el(index ? 'td' : 'th', cell);
+        if (!index) node.scope = 'row';
+        tr.append(node);
+      });
+      body.append(tr);
+    });
+    table.append(head, body);
+    scroller.append(table);
+    area.append(scroller, sourceLine(comparison.sources));
+  }
+  function renderLab(article, lab) {
+    const area = section(article, 'lab');
+    area.append(el('h3', lab.title));
+    const goal = el('p');
+    goal.append(el('strong', `${t('labGoal')} `), lab.goal);
+    area.append(goal, el('p', t('labDuration', lab), 'muted'));
+    area.append(el('h3', t('labRequirements')), list(lab.requirements));
+    const steps = el('ol', null, 'lab-steps');
+    lab.steps.forEach((step) => {
+      const item = el('li');
+      item.append(el('h4', step.title), el('p', step.body));
+      if (step.code) item.append(codeBlock(step.code));
+      const check = el('p', null, 'lab-check');
+      check.append(el('strong', `${t('labCheck')} `), step.check);
+      item.append(check);
+      steps.append(item);
+    });
+    area.append(steps, el('h3', t('labWrapUp')), el('p', lab.wrapUp), sourceLine(lab.sources));
+  }
+  function renderCertification(article, session, certification) {
+    const area = section(article, 'certification');
+    area.append(el('p', certification.intro, 'notice'), el('h3', t('certExams')));
+    const exams = el('ul', null, 'exams');
+    certification.exams.forEach((exam) => {
+      const item = el('li');
+      const a = source(item, { label: exam.name, url: exam.url });
+      a.className = 'exam';
+      item.append(el('span', exam.domains.join(' · '), 'muted'));
+      exams.append(item);
+    });
+    area.append(exams);
+    renderPractice(area, {
+      key: 'certification',
+      id: `${session.id}-cert`,
+      questions: certification.questions,
+      intro: t('certIntro', { count: certification.questions.length, percent: Math.round(D.quiz.PASS_RATIO * 100) }),
+    });
+  }
+  // "In this session" contents: buttons scroll to sections without touching the hash route.
+  function renderContents(article, before) {
+    const nav = el('nav', null, 'contents');
+    nav.setAttribute('aria-label', t('contents'));
+    nav.append(el('p', t('contents'), 'eyebrow'));
+    const items = el('ul');
+    article.querySelectorAll('.lesson-section').forEach((node) => {
+      const heading = node.querySelector('h2');
+      const li = el('li');
+      li.append(button(heading.textContent, () => {
+        const smooth = !globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+        heading.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+        heading.focus({ preventScroll: true });
+      }));
+      items.append(li);
+    });
+    nav.append(items);
+    article.insertBefore(nav, before);
   }
   function renderSession(main, number) {
     const session = sessions().find((item) => item.number === number);
@@ -213,11 +354,18 @@
     header.append(el('p', `${t('sessionNumber', session)} · ${trackLabel(session)} · ${t('minutes', session)}`, 'eyebrow'), el('h1', session.title), el('p', session.summary));
     article.append(header);
     if (session.brochureNote) article.append(el('p', session.brochureNote, 'notice'));
-    section(article, 'why').append(el('p', session.whyItMatters));
+    const deep = deepFor(session);
+    const first = section(article, 'why');
+    first.append(el('p', session.whyItMatters));
     section(article, 'objectives').append(list(session.objectives));
     section(article, 'review').append(list(session.review));
     const concepts = section(article, 'concepts');
     session.concepts.forEach((concept) => concepts.append(el('h3', concept.title), el('p', concept.body)));
+    if (deep) {
+      renderDeepDive(article, deep);
+      renderDiagram(article, deep.diagram);
+      renderComparison(article, deep.comparison);
+    }
     section(article, 'example').append(el('h3', session.example.title), codeBlock(session.example), el('p', session.example.explanation));
     const exercise = section(article, 'exercise');
     exercise.append(el('p', session.exercise.prompt));
@@ -226,7 +374,14 @@
     const solution = el('details');
     solution.append(el('summary', t('solution')), codeBlock(session.exercise.solution));
     exercise.append(hint, solution);
-    renderQuiz(article, session);
+    if (deep) renderLab(article, deep.lab);
+    renderPractice(section(article, 'quiz'), {
+      key: 'quiz',
+      id: session.id,
+      questions: session.quiz,
+      intro: t('quizIntro', { percent: Math.round(D.quiz.PASS_RATIO * 100) }),
+    });
+    if (deep) renderCertification(article, session, deep.certification);
     section(article, 'questions').append(list(session.classQuestions));
     const glossary = el('dl');
     session.glossary.forEach((item) => glossary.append(el('dt', item.term), el('dd', item.definition)));
@@ -241,6 +396,7 @@
       references.append(li);
     });
     section(article, 'references').append(references);
+    renderContents(article, first);
     const actions = el('div', null, 'study-actions');
     const studied = Boolean(state(session).studied);
     const toggle = button(studied ? t('unmark') : t('mark'), () => {
