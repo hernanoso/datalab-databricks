@@ -1,0 +1,14 @@
+{
+  "version": 1,
+  "chosen": "02-course-map.html",
+  "handoffs": {
+    "02-course-map.html": {
+      "status": "sent",
+      "queued": true,
+      "sentAt": "2026-10-29T01:20:46.379Z",
+      "startedAt": null,
+      "implementedAt": null,
+      "feature": "odd/tasks/databricks-study.md"
+    }
+  }
+}

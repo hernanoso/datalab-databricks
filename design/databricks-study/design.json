@@ -1,0 +1,28 @@
+{
+  "title": "DataLab · Preparación para Databricks",
+  "brief": "Una plataforma compartida sin cuentas, con 16 sesiones de preparación y progreso local.",
+  "feature": "odd/tasks/databricks-study.md",
+  "artboards": [
+    {
+      "file": "01-learning-workspace.html",
+      "title": "Espacio de estudio",
+      "tradeoff": "Navegación persistente, color por bloque temático y lectura enfocada; más carga visual que una versión sobria.",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "02-course-map.html",
+      "title": "Mapa del programa",
+      "tradeoff": "Panorama de las 16 sesiones; exige entrar a cada tema para estudiar.",
+      "width": 1440,
+      "height": 1000
+    },
+    {
+      "file": "03-focus-reader.html",
+      "title": "Lectura sin distracciones",
+      "tradeoff": "Una sesión a la vez; el programa queda en segundo plano.",
+      "width": 1440,
+      "height": 1000
+    }
+  ]
+}

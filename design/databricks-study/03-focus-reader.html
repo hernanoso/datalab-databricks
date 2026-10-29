@@ -1,0 +1,21 @@
+<!doctype html>
+<html lang="es"><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Lectura sin distracciones — DataLab</title><style>
+:root { color-scheme: light; font: 16px/1.6 system-ui,sans-serif; color:#183330; background:#f7f8f5; }
+* { box-sizing:border-box; } body { margin:0; } a { color:#146453; } a:focus-visible { outline:3px solid #b85e17; outline-offset:4px; }
+header { padding:24px 40px; background:white; border-bottom:1px solid #dce5df; display:flex; justify-content:space-between; }
+.brand { font-weight:800; letter-spacing:-.6px; } .brand b { color:#146453; }
+main { max-width:1200px; margin:40px auto; padding:0 28px; } h1 { font-size:clamp(32px,5vw,58px); line-height:1.12; letter-spacing:-2px; margin:16px 0; } h2 { line-height:1.3; }
+small,.eyebrow { color:#506961; } .eyebrow { font-size:12px; font-weight:800; letter-spacing:2px; text-transform:uppercase; }
+.lead { max-width:650px; font-size:19px; color:#506961; } .pill { display:inline-block; padding:5px 12px; border-radius:30px; background:#edf4ee; color:#215c4d; font-size:13px; }
+.hero { background:#eaf2e9; padding:38px; border-radius:24px; position:relative; overflow:hidden; }
+.cta { display:inline-block; background:#146453; color:white; padding:13px 22px; border-radius:10px; text-decoration:none; font-weight:700; }
+.stats { display:flex; gap:40px; margin:28px 0; } .stats strong { display:block; font-size:25px; }
+.grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; margin-top:28px; }
+.card { background:white; padding:24px; border:1px solid #dce5df; border-radius:16px; } .card p { color:#506961; } .number { color:#146453; font-size:13px; font-weight:800; }
+.shell { display:grid; grid-template-columns:235px 1fr; gap:30px; } aside { padding:24px; background:white; border-radius:16px; }
+aside a { display:block; text-decoration:none; padding:12px 0; } .selected { font-weight:800; }
+.reader main { max-width:840px; } .reader .hero { background:transparent; padding:0; } .reader .stats { border-block:1px solid #dce5df; padding:18px 0; }
+.reader .grid { grid-template-columns:1fr; } pre { overflow:auto; background:#173b35; color:#e4f3e8; padding:24px; border-radius:14px; }
+footer { padding:32px; color:#506961; text-align:center; font-size:13px; }
+@media(max-width:760px) { .grid,.shell { grid-template-columns:1fr; } aside { display:none; } header { padding:18px; } .hero { padding:24px; } main { padding:0 18px; } }
+</style><body class="reader"><header><span class="brand">◈ Data<b>Lab</b> <small>/ guía de estudio</small></span><span class="pill">Databricks · en español</span></header><main><span class="eyebrow">Sesión 01 / 16 · Fundamentos</span><section class="hero"><h1>Primero, entendamos<br>el mapa de Databricks.</h1><p class="lead">Antes de abrir un notebook, necesitas ubicar dónde viven los datos y dónde se procesan.</p></section><div class="stats"><span>Conceptos</span><span>Ejemplo guiado</span><span>Autoevaluación</span></div><article id="lesson"><h2>Almacenamiento no es cómputo</h2><p>Los archivos viven en almacenamiento de objetos. El cómputo los lee, transforma y produce nuevos resultados. Separarlos permite ajustar recursos sin mover todos los datos.</p><pre>Archivos → Cómputo → Tablas → Análisis</pre><div class="card"><strong>Antes de la clase</strong><p>Explica con tus palabras por qué apagar el cómputo no debería borrar los archivos.</p></div></article></main><footer>Material de preparación independiente · Basado en el temario del brochure · No es contenido oficial de Databricks ni de Smart Data.</footer></body></html>

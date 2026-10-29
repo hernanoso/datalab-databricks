@@ -1,0 +1,99 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Espacio de estudio — DataLab</title>
+<style>
+:root {
+  --ink:#14213d; --muted:#4a5672; --line:#e3e6f0; --bg:#f6f4ff; --card:#fff;
+  --brand:#d62d1a; --violet:#6d28d9; --blue:#1d4ed8; --teal:#0f766e; --orange:#c2410c;
+  --rose:#be185d; --cyan:#0e7490; --green:#15803d; --indigo:#4338ca; --fuchsia:#a21caf;
+  font:16px/1.6 system-ui,-apple-system,"Segoe UI",sans-serif; color:var(--ink); background:var(--bg);
+}
+* { box-sizing:border-box; } body { margin:0; }
+a { color:inherit; } a:focus-visible, button:focus-visible { outline:3px solid #f59e0b; outline-offset:3px; border-radius:6px; }
+header { display:flex; justify-content:space-between; align-items:center; padding:16px 32px; background:#14213d; color:#fff; }
+.brand { font-weight:800; font-size:20px; } .brand span { color:#ff8a65; }
+.langs { display:flex; gap:4px; background:rgba(255,255,255,.12); padding:4px; border-radius:12px; }
+.langs button { border:0; background:transparent; color:#fff; font:inherit; font-weight:700; padding:6px 14px; border-radius:9px; cursor:pointer; }
+.langs button[aria-selected="true"] { background:#fff; color:#14213d; }
+.pill { padding:4px 12px; border-radius:99px; font-size:13px; font-weight:700; background:rgba(255,255,255,.14); }
+.shell { display:grid; grid-template-columns:260px 1fr; min-height:calc(100vh - 60px); }
+aside { background:#fff; border-right:1px solid var(--line); padding:24px 16px; }
+aside h2 { font-size:12px; letter-spacing:2px; text-transform:uppercase; color:var(--muted); margin:0 8px 12px; }
+nav a { display:flex; gap:10px; align-items:center; padding:9px 10px; border-radius:10px; text-decoration:none; font-size:14px; }
+nav a:hover { background:#f1effc; } nav a.active { background:#ede9fe; font-weight:700; }
+.dot { width:26px; height:26px; flex:none; border-radius:8px; color:#fff; font-size:12px; font-weight:800; display:grid; place-items:center; }
+main { padding:32px 40px; max-width:1180px; }
+.hero { border-radius:24px; padding:40px; color:#fff; background:linear-gradient(120deg,#4c1d95 0%,#1d4ed8 55%,#0f766e 100%); position:relative; overflow:hidden; }
+.hero::after { content:""; position:absolute; right:-60px; top:-60px; width:260px; height:260px; border-radius:50%; background:radial-gradient(circle,#ff8a65 0%,rgba(255,138,101,0) 70%); opacity:.55; }
+.hero h1 { font-size:46px; line-height:1.1; letter-spacing:-1.5px; margin:12px 0; max-width:640px; }
+.hero p { max-width:600px; font-size:18px; color:#e8ecff; }
+.cta { display:inline-block; margin-top:12px; background:#fff; color:#4c1d95; padding:12px 22px; border-radius:12px; font-weight:800; text-decoration:none; }
+.stats { display:grid; grid-template-columns:repeat(3,1fr); gap:16px; margin:24px 0; }
+.stat { background:#fff; border-radius:16px; padding:18px 20px; border-top:5px solid var(--c); }
+.stat strong { display:block; font-size:28px; color:var(--c); } .stat small { color:var(--muted); }
+h2.section { font-size:26px; margin:32px 0 6px; } .sub { color:var(--muted); margin:0 0 18px; }
+.grid { display:grid; grid-template-columns:repeat(3,1fr); gap:18px; }
+.card { background:#fff; border-radius:18px; overflow:hidden; border:1px solid var(--line); display:flex; flex-direction:column; }
+.card .top { background:var(--c); color:#fff; padding:16px 20px; }
+.card .top small { font-weight:800; letter-spacing:1.5px; font-size:12px; opacity:.9; }
+.card .top h3 { margin:4px 0 0; font-size:19px; line-height:1.3; }
+.card .body { padding:16px 20px; color:var(--muted); flex:1; }
+.card .foot { padding:0 20px 18px; display:flex; justify-content:space-between; align-items:center; font-size:14px; }
+.tag { background:var(--t); color:var(--c); padding:3px 10px; border-radius:99px; font-weight:700; font-size:12px; }
+.go { color:var(--c); font-weight:800; text-decoration:none; }
+footer { padding:24px 40px; color:var(--muted); font-size:13px; }
+@media (max-width:860px) { .shell { grid-template-columns:1fr; } aside { display:none; } .grid,.stats { grid-template-columns:1fr; } .hero h1 { font-size:34px; } main { padding:20px; } }
+@media (prefers-reduced-motion:no-preference) { .card { transition:transform .2s; } .card:hover { transform:translateY(-3px); } }
+</style>
+</head>
+<body>
+<header><span class="brand">◈ Data<span>Lab</span></span><span class="langs" role="tablist" aria-label="Idioma de estudio"><button role="tab" aria-selected="true">Español</button><button role="tab" aria-selected="false">English</button></span></header>
+<div class="shell">
+  <aside aria-label="Sesiones">
+    <h2>Mi ruta · 16 sesiones</h2>
+    <nav>
+      <a class="active" href="#"><span class="dot" style="background:var(--violet)">01</span>Cloud y Databricks</a>
+      <a href="#"><span class="dot" style="background:var(--blue)">02</span>Spark SQL</a>
+      <a href="#"><span class="dot" style="background:var(--blue)">03</span>PySpark</a>
+      <a href="#"><span class="dot" style="background:var(--blue)">04</span>ETL</a>
+      <a href="#"><span class="dot" style="background:var(--teal)">05</span>Delta Lake</a>
+      <a href="#"><span class="dot" style="background:var(--teal)">06</span>Carga incremental</a>
+      <a href="#"><span class="dot" style="background:var(--orange)">07</span>Lakeflow Jobs</a>
+      <a href="#"><span class="dot" style="background:var(--orange)">08</span>Data Factory</a>
+      <a href="#"><span class="dot" style="background:var(--teal)">09</span>Pipelines declarativos</a>
+      <a href="#"><span class="dot" style="background:var(--rose)">10</span>Unity Catalog</a>
+      <a href="#"><span class="dot" style="background:var(--rose)">11</span>Seguridad</a>
+      <a href="#"><span class="dot" style="background:var(--cyan)">12</span>Streaming</a>
+      <a href="#"><span class="dot" style="background:var(--green)">13</span>Dashboards</a>
+      <a href="#"><span class="dot" style="background:var(--indigo)">14</span>CI/CD</a>
+      <a href="#"><span class="dot" style="background:var(--fuchsia)">15</span>IA Generativa</a>
+      <a href="#"><span class="dot" style="background:var(--fuchsia)">16</span>Agentes de IA</a>
+    </nav>
+  </aside>
+  <main>
+    <section class="hero">
+      <span class="pill">Ingeniería de Datos e IA con Databricks</span>
+      <h1>Entiende hoy. Llega preparado a clase.</h1>
+      <p>Conceptos explicados desde cero, ejemplos de código y autoevaluación para cada una de las 16 sesiones.</p>
+      <a class="cta" href="#">Empezar por la sesión 1 →</a>
+    </section>
+    <div class="stats">
+      <div class="stat" style="--c:var(--violet)"><strong>3 / 16</strong><small>sesiones estudiadas</small></div>
+      <div class="stat" style="--c:var(--teal)"><strong>19%</strong><small>de la ruta completa</small></div>
+      <div class="stat" style="--c:var(--brand)"><strong>Sin cuentas</strong><small>tu progreso queda en este navegador</small></div>
+    </div>
+    <h2 class="section">Tu próxima sesión</h2>
+    <p class="sub">Cada bloque temático tiene su color para que ubiques dónde estás.</p>
+    <div class="grid">
+      <article class="card" style="--c:var(--blue);--t:#dbeafe"><div class="top"><small>SESIÓN 02 · PROCESAMIENTO</small><h3>Procesamiento con Spark SQL</h3></div><div class="body">CTEs, CTAS y lectura de JSON, CSV y Parquet.</div><div class="foot"><span class="tag">✓ Estudiada</span><a class="go" href="#">Repasar →</a></div></article>
+      <article class="card" style="--c:var(--teal);--t:#ccfbf1"><div class="top"><small>SESIÓN 05 · DELTA LAKE</small><h3>Optimizaciones en Delta Lake</h3></div><div class="body">ACID, Time Travel, MERGE y OPTIMIZE.</div><div class="foot"><span class="tag">Autoevaluación 4/5</span><a class="go" href="#">Continuar →</a></div></article>
+      <article class="card" style="--c:var(--fuchsia);--t:#fae8ff"><div class="top"><small>SESIÓN 15 · IA</small><h3>IA Generativa con Databricks</h3></div><div class="body">LLMs, Genie, Playground y model serving.</div><div class="foot"><span class="tag">Pendiente</span><a class="go" href="#">Estudiar →</a></div></article>
+    </div>
+  </main>
+</div>
+<footer>Material de preparación independiente basado en el temario del brochure. No es contenido oficial de Databricks ni de Smart Data.</footer>
+</body>
+</html>
