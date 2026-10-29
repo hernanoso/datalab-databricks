@@ -171,8 +171,26 @@
     form.noValidate = true;
     questions.forEach((question, index) => {
       const field = el('fieldset');
+      field.dataset.question = String(index);
       field.append(el('legend', `${index + 1}. ${question.question}`));
       if (question.domain) field.append(el('p', t('domain', { domain: question.domain }), 'domain'));
+      if (question.type === 'hotspot') {
+        field.append(el('p', t('hotspotHint'), 'muted'));
+        field.append(renderMock(question.screen, {
+          interactive: true,
+          selected: current.answers[index] || null,
+          disabled: current.submitted,
+          answer: result ? question.answer : null,
+          onSelect: (target) => { current.answers[index] = target; },
+        }));
+        if (result) {
+          const correct = result.results[index].correct;
+          const label = D.mockui.labelOf(D.mockui.target(question.screen, question.answer), lang);
+          field.append(el('p', `${correct ? t('correct') : t('incorrect')} ${t('correctTarget', { label })} ${question.explanation}`, correct ? 'feedback correct' : 'feedback incorrect'));
+        }
+        form.append(field);
+        return;
+      }
       question.options.forEach((option, optionIndex) => {
         const label = el('label', null, 'option');
         const input = el('input');
@@ -202,10 +220,10 @@
     form.addEventListener('submit', (event) => {
       event.preventDefault();
       if (current.submitted) return;
-      const missing = questions.findIndex((_, index) => !Number.isInteger(current.answers[index]));
+      const missing = questions.findIndex((_, index) => !D.quiz.isAnswer(current.answers[index]));
       if (missing >= 0) {
         error.textContent = t('answerAll');
-        form.querySelector(`input[name="${key}-question-${missing}"]`).focus();
+        form.querySelector(`[data-question="${missing}"] input, [data-question="${missing}"] button`).focus();
         return;
       }
       current.submitted = true;
@@ -226,6 +244,56 @@
       }));
       area.append(output);
     }
+  }
+  // Original, simplified illustration of a Databricks screen (lib/mockui.js).
+  // Interactive mode turns each zone into a button; static mode highlights zones.
+  function renderMock(screenId, options = {}) {
+    const screen = D.mockui.screens[screenId];
+    const { interactive = false, selected = null, disabled = false, highlight = [], answer = null, onSelect } = options;
+    const box = el('div', null, `mock${interactive ? ' is-interactive' : ''}`);
+    box.setAttribute('role', 'group');
+    box.setAttribute('aria-label', t('mockLabel', { title: screen.title[lang] || screen.title.es }));
+    const bar = el('div', null, 'mock-bar');
+    bar.append(el('span', 'Databricks', 'mock-logo'), el('span', screen.title[lang] || screen.title.es, 'mock-title'));
+    const body = el('div', null, 'mock-body');
+    const side = el('div', null, 'mock-side');
+    const content = el('div', null, 'mock-content');
+    const buttons = [];
+    screen.regions.forEach((region) => {
+      const zone = el('div', null, `mock-region kind-${region.kind}`);
+      if (region.heading) zone.append(el('p', region.heading, 'mock-heading'));
+      region.targets.forEach((item) => {
+        const text = D.mockui.labelOf(item, lang);
+        let node;
+        if (interactive) {
+          node = el('button', text, 'mock-item');
+          node.type = 'button';
+          node.dataset.target = item.id;
+          node.disabled = disabled;
+          node.setAttribute('aria-pressed', String(selected === item.id));
+          node.addEventListener('click', () => {
+            buttons.forEach((other) => other.setAttribute('aria-pressed', String(other === node)));
+            if (onSelect) onSelect(item.id);
+          });
+          buttons.push(node);
+        } else {
+          node = el('span', text, 'mock-item');
+          if (highlight.includes(item.id)) {
+            node.classList.add('is-highlighted');
+            node.append(el('span', ` ${t('highlightedMark')}`, 'visually-hidden'));
+          }
+        }
+        if (region.active === item.id) node.classList.add('is-active');
+        if (answer && item.id === answer) node.classList.add('is-correct');
+        if (answer && selected === item.id && selected !== answer) node.classList.add('is-wrong');
+        zone.append(node);
+      });
+      (region.kind === 'sidebar' ? side : content).append(zone);
+    });
+    if (side.childElementCount) body.append(side);
+    body.append(content);
+    box.append(bar, body, el('p', t('mockNotice'), 'mock-notice'));
+    return box;
   }
   function renderDeepDive(article, deep) {
     const area = section(article, 'deepDive');
@@ -297,6 +365,7 @@
     lab.steps.forEach((step) => {
       const item = el('li');
       item.append(el('h4', step.title), el('p', step.body));
+      if (step.screen) item.append(renderMock(step.screen.id, { highlight: step.screen.highlight }));
       if (step.code) item.append(codeBlock(step.code));
       const check = el('p', null, 'lab-check');
       check.append(el('strong', `${t('labCheck')} `), step.check);

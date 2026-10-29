@@ -42,6 +42,20 @@ test('quiz grading counts correct answers and treats unanswered as wrong', () =>
   assert.equal(quiz.grade(questions, [1, 0, 2]).passed, true);
 });
 
+test('quiz grading accepts clicked target ids for hotspot questions', () => {
+  const questions = [
+    { answer: 'catalog' },
+    { answer: 1, options: ['a', 'b', 'c'] },
+    { answer: 'sqlEditor' },
+  ];
+  const result = quiz.grade(questions, ['catalog', 1, 'compute']);
+  assert.equal(result.score, 2);
+  assert.deepEqual(result.results.map((r) => r.correct), [true, true, false]);
+  assert.deepEqual(result.results.map((r) => r.chosen), ['catalog', 1, 'compute']);
+  // Empty or missing selections count as unanswered.
+  assert.deepEqual(quiz.grade(questions, ['', undefined, null]).results.map((r) => r.chosen), [null, null, null]);
+});
+
 test('quiz passes at 70 percent or more', () => {
   const qs = Array.from({ length: 10 }, () => ({ answer: 0, options: ['a', 'b', 'c'] }));
   assert.equal(quiz.grade(qs, [0, 0, 0, 0, 0, 0, 0, 1, 1, 1]).passed, true);

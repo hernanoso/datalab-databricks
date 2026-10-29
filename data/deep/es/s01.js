@@ -127,30 +127,35 @@
           title: 'Recorre la barra lateral',
           body: 'Abre una por una las secciones Workspace, Catalog, Jobs & Pipelines, Compute, SQL Editor y Playground. En la página de inicio busca Ask Genie. No configures nada todavía: el objetivo es saber dónde está cada herramienta.',
           check: 'Puedes explicar con una frase para qué sirve cada sección.',
+          screen: { id: 'home', highlight: ['workspace', 'catalog', 'jobs', 'compute', 'sqlEditor', 'playground'] },
         },
         {
           title: 'Crea un notebook y conéctalo a serverless',
           body: 'Haz clic en New y luego en Notebook. Cambia el lenguaje a SQL y, en el selector de cómputo, elige Serverless. Ejecuta la celda para saber en qué catálogo y esquema estás trabajando.',
           code: { language: 'sql', code: 'SELECT current_catalog() AS catalogo,\n       current_schema()  AS esquema,\n       current_user()    AS usuario;' },
           check: 'Anotaste el nombre de tu catálogo: lo usarás en lugar de <tu_catalogo> en los pasos siguientes.',
+          screen: { id: 'notebook', highlight: ['languageSelect', 'computeSelect'] },
         },
         {
           title: 'Explora los datos de ejemplo',
           body: 'En Catalog abre samples, luego nyctaxi y la tabla trips. Revisa las columnas y la vista previa. Después vuelve al notebook y consulta la tabla con SQL.',
           code: { language: 'sql', code: 'SELECT COUNT(*) AS viajes,\n       ROUND(AVG(trip_distance), 2) AS distancia_promedio,\n       ROUND(AVG(fare_amount), 2)   AS tarifa_promedio\nFROM samples.nyctaxi.trips;' },
           check: 'La consulta devuelve una fila con el número de viajes y dos promedios.',
+          screen: { id: 'catalog', highlight: ['samples'] },
         },
         {
           title: 'Crea un volumen para tus archivos',
           body: 'En Catalog entra a tu catálogo, abre el esquema default y usa Create y luego Volume. Elige un volumen administrado llamado raw. También puedes crearlo desde el notebook con SQL.',
           code: { language: 'sql', code: 'CREATE VOLUME IF NOT EXISTS <tu_catalogo>.default.raw\nCOMMENT \'Archivos crudos del curso\';' },
           check: 'El volumen raw aparece dentro del esquema default en Catalog.',
+          screen: { id: 'catalog', highlight: ['create', 'volume'] },
         },
         {
           title: 'Sube un CSV propio',
           body: 'Crea en tu computadora un archivo ventas.csv con el contenido de abajo. En el workspace usa New, luego Add or upload data y Upload files to a volume. Elige el archivo y, como destino, el volumen raw.',
           code: { language: 'text', code: 'fecha,producto,cantidad,precio\n2026-01-05,Café,3,4.50\n2026-01-05,Té,1,3.20\n2026-01-06,Café,2,4.50\n2026-01-06,Pan,5,1.10\n2026-01-07,Té,4,3.20' },
           check: 'En Catalog, dentro del volumen raw, ves el archivo ventas.csv.',
+          screen: { id: 'newMenu', highlight: ['uploadData'] },
         },
         {
           title: 'Lee el archivo con SQL',
@@ -169,6 +174,7 @@
           body: 'Abre SQL Editor, elige el SQL warehouse disponible y ejecuta una agregación sobre tu tabla. Es el mismo dato que usaste en el notebook, ahora desde la herramienta pensada para análisis.',
           code: { language: 'sql', code: 'SELECT producto, SUM(total) AS ingresos\nFROM <tu_catalogo>.default.ventas\nGROUP BY producto\nORDER BY ingresos DESC;' },
           check: 'Café aparece primero, con ingresos de 22.50.',
+          screen: { id: 'home', highlight: ['sqlEditor'] },
         },
         {
           title: 'Opcional: navega por Azure',
@@ -188,7 +194,7 @@
       intro: 'Preguntas de práctica originales, alineadas con las guías oficiales. No son preguntas reales del examen.',
       exams: [
         { name: 'Databricks Fundamentals (acreditación)', url: 'https://www.databricks.com/training/catalog/databricks-fundamentals-2206', domains: ['Plataforma y lakehouse', 'Gobierno unificado', 'Recorrido por el workspace'] },
-        { name: 'Databricks Certified Data Engineer Associate', url: 'https://www.databricks.com/sites/default/files/2026-03/databricks-certified-data-engineer-associate-exam-guide-may-4-2026.pdf', domains: ['Databricks Intelligence Platform', 'Governance and Security'] },
+        { name: 'Databricks Certified Data Engineer Associate', url: 'https://www.databricks.com/sites/default/files/2026-03/databricks-certified-data-engineer-associate-exam-guide-may-4-2026.pdf', domains: ['Databricks Intelligence Platform', 'Data Ingestion and Loading', 'Governance and Security'] },
         { name: 'Databricks Data + AI Platform Administrator Accreditation', url: 'https://www.databricks.com/learn/certification/platform-administrator-accreditation', domains: ['Recursos de cómputo', 'Gobierno y seguridad'] },
       ],
       questions: [
@@ -203,6 +209,11 @@
         { domain: 'Recursos de cómputo', question: '¿Qué cómputo puedes usar en Databricks Free Edition?', options: ['Clústeres clásicos con cualquier tamaño', 'Solo cómputo serverless, con un SQL warehouse de tamaño 2X-Small', 'Ninguno: solo permite leer documentación', 'GPU para entrenar modelos'], answer: 1, explanation: 'Free Edition solo ofrece cómputo serverless y un SQL warehouse limitado a 2X-Small.' },
         { domain: 'Databricks Fundamentals', question: 'En un modelo PaaS como Databricks, ¿qué responsabilidad sigue siendo del cliente?', options: ['Actualizar el hardware del centro de datos', 'Parchear el sistema operativo de los servidores administrados', 'Proteger sus datos y decidir quién tiene acceso', 'Reemplazar los discos dañados'], answer: 2, explanation: 'Los datos, las identidades y los accesos son responsabilidad del cliente en cualquier modelo de nube.' },
         { domain: 'Databricks Intelligence Platform', question: '¿Qué se recomienda hoy en lugar del DBFS raíz y los montajes?', options: ['Guardar archivos en el control plane', 'Unity Catalog con tablas y volúmenes gobernados', 'Copiar los archivos a cada notebook', 'Usar solo archivos CSV locales'], answer: 1, explanation: 'El DBFS raíz y los montajes están obsoletos; los datos se gobiernan con Unity Catalog y sus volúmenes.' },
+        { type: 'hotspot', domain: 'Databricks Intelligence Platform', screen: 'home', answer: 'catalog', question: 'Quieres explorar catálogos, esquemas y permisos de tus tablas. ¿Dónde haces clic?', explanation: 'Catalog abre Catalog Explorer, donde navegas catálogos, esquemas, tablas y volúmenes y revisas sus permisos.' },
+        { type: 'hotspot', domain: 'Data Ingestion and Loading', screen: 'newMenu', answer: 'uploadData', question: 'Necesitas subir ventas.csv a un volumen. ¿Qué opción del menú New eliges?', explanation: 'New, luego Add or upload data y Upload files to a volume es la ruta documentada para subir archivos a un volumen.' },
+        { type: 'hotspot', domain: 'Governance and Security', screen: 'catalog', answer: 'volume', question: 'Estás en el esquema default y abriste el menú Create. ¿Dónde haces clic para crear el volumen raw?', explanation: 'Catalog, el esquema, Create y Volume crean el volumen; necesitas los permisos USE CATALOG, USE SCHEMA y CREATE VOLUME.' },
+        { type: 'hotspot', domain: 'Recursos de cómputo', screen: 'notebook', answer: 'computeSelect', question: 'Tu notebook debe ejecutarse con cómputo serverless. ¿Dónde lo eliges?', explanation: 'El selector de cómputo del notebook permite elegir Serverless; en Free Edition es la única opción disponible.' },
+        { type: 'hotspot', domain: 'Databricks Intelligence Platform', screen: 'home', answer: 'sqlEditor', question: 'Quieres consultar una tabla con un SQL warehouse, fuera de un notebook. ¿Dónde vas?', explanation: 'SQL Editor ejecuta consultas sobre un SQL warehouse; en Free Edition hay uno de tamaño 2X-Small.' },
       ],
     },
   };

@@ -18,6 +18,9 @@ syllabus. It is not official Databricks or Smart Data material.
   diagram, a comparison table, a step-by-step guided lab for Databricks Free
   Edition and about ten original certification practice questions with their
   own best score. Session 1 is available; the rest arrive in blocks.
+- Interactive "where do you click?" questions and highlighted lab steps on an
+  original, simplified illustration of the Databricks interface
+  (`lib/mockui.js`); they are not screenshots and may differ from the real UI.
 - Spanish (neutral) and English tabs. The site always opens in Spanish; English
   is remembered once a student chooses it.
 - No accounts: progress (sessions marked as studied and best quiz score) is

@@ -78,15 +78,19 @@ for (const id of Object.keys(deep.es || {})) {
     const cert = d.certification;
     assert.ok(cert.exams.length >= 1 && cert.exams.every((e) => e.name && official(e.url) && e.domains.length >= 1));
     assert.ok(cert.questions.length >= 10, 'ten questions or more');
+    const choices = cert.questions.filter((q) => q.type !== 'hotspot');
+    assert.ok(choices.length >= 10, 'ten multiple-choice questions or more');
     cert.questions.forEach((q) => {
-      assert.ok(q.question && q.domain, q.question);
+      assert.ok(q.question && q.domain && q.explanation.length > 30, q.question);
+      assert.ok(!q.type || q.type === 'hotspot', `${q.question}: unknown type ${q.type}`);
+    });
+    choices.forEach((q) => {
       assert.ok(q.options.length >= 4, `${q.question}: four options`);
       assert.equal(new Set(q.options).size, q.options.length, `${q.question}: duplicate options`);
       assert.ok(Number.isInteger(q.answer) && q.answer >= 0 && q.answer < q.options.length, q.question);
-      assert.ok(q.explanation.length > 30, q.question);
     });
     // Answers should not always sit in the same position.
-    assert.ok(new Set(cert.questions.map((q) => q.answer)).size >= 3, 'vary the position of correct answers');
+    assert.ok(new Set(choices.map((q) => q.answer)).size >= 3, 'vary the position of correct answers');
   });
 
   test(`${id} English deep content mirrors Spanish`, () => {
@@ -103,7 +107,9 @@ for (const id of Object.keys(deep.es || {})) {
     assert.deepEqual(e.lab.steps.map((s) => s.code ? s.code.language : null), d.lab.steps.map((s) => s.code ? s.code.language : null));
     assert.deepEqual(e.lab.sources.map((s) => s.url), d.lab.sources.map((s) => s.url));
     assert.deepEqual(e.certification.exams.map((x) => [x.url, x.domains.length]), d.certification.exams.map((x) => [x.url, x.domains.length]));
-    assert.deepEqual(e.certification.questions.map((q) => [q.options.length, q.answer]), d.certification.questions.map((q) => [q.options.length, q.answer]));
+    const shape = (q) => [q.type || 'choice', q.options ? q.options.length : q.screen, q.answer];
+    assert.deepEqual(e.certification.questions.map(shape), d.certification.questions.map(shape));
+    assert.deepEqual(e.lab.steps.map((x) => (x.screen ? [x.screen.id, ...x.screen.highlight] : null)), d.lab.steps.map((x) => (x.screen ? [x.screen.id, ...x.screen.highlight] : null)));
     const prose = e.deepDive.flatMap((x) => x.body).join(' ') + e.lab.goal + e.lab.wrapUp;
     assert.doesNotMatch(prose, /\b(los|las|para|cuando|también|puedes)\b/i, 'Spanish words left in English prose');
   });
