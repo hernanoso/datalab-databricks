@@ -76,7 +76,7 @@
         'The difference between text formats (CSV, JSON) and columnar formats (Parquet).',
       ],
       concepts: [
-        { title: 'Catalog, schema, and table', body: 'In Unity Catalog, every table has a three-level name: catalog.schema.table. Free Edition usually has a catalog called workspace with the default schema. Using fully qualified names avoids writing to the wrong place.' },
+        { title: 'Catalog, schema, and table', body: 'In Unity Catalog, every table has a three-level name: catalog.schema.table. Find your catalog with current_catalog() and replace <your_catalog> in the examples; the default schema usually exists. Using fully qualified names avoids writing to the wrong place.' },
         { title: 'Reading files with read_files', body: 'The read_files function reads CSV, JSON, Parquet, and other formats from a volume or storage path and infers the schema. For CSV, it is useful to specify header => true. Volumes (/Volumes/catalog/schema/volume) are the governed way to store files.' },
         { title: 'CTEs: transforming step by step', body: 'A CTE (WITH name AS (...)) names an intermediate result. It lets you write a transformation as a sequence of clear steps instead of nested subqueries and makes it easier to debug each step separately.' },
         { title: 'CTAS: saving the result', body: 'CREATE OR REPLACE TABLE ... AS SELECT creates a Delta table with the result schema. It is useful for materializing a clean layer. CREATE OR REPLACE is idempotent: you can rerun the cell without duplicating data.' },
@@ -84,13 +84,13 @@
       ],
       example: {
         title: 'From a raw file to a clean table', language: 'sql',
-        code: `CREATE OR REPLACE TABLE workspace.default.monthly_sales AS\nWITH sales AS (\n  SELECT *\n  FROM read_files(\n    '/Volumes/workspace/default/raw/sales/',\n    format => 'csv',\n    header => true\n  )\n),\ncleaned AS (\n  SELECT CAST(date AS DATE) AS date,\n         CAST(amount AS DECIMAL(10, 2)) AS amount\n  FROM sales\n  WHERE amount IS NOT NULL\n)\nSELECT date_trunc('MONTH', date) AS month, SUM(amount) AS total\nFROM cleaned\nGROUP BY 1;`,
+        code: `CREATE OR REPLACE TABLE <your_catalog>.default.monthly_sales AS\nWITH sales AS (\n  SELECT *\n  FROM read_files(\n    '/Volumes/<your_catalog>/default/raw/sales/',\n    format => 'csv',\n    header => true\n  )\n),\ncleaned AS (\n  SELECT CAST(date AS DATE) AS date,\n         CAST(amount AS DECIMAL(10, 2)) AS amount\n  FROM sales\n  WHERE amount IS NOT NULL\n)\nSELECT date_trunc('MONTH', date) AS month, SUM(amount) AS total\nFROM cleaned\nGROUP BY 1;`,
         explanation: 'The first CTE reads the file, the second cleans types and nulls, and the final SELECT aggregates. CTAS saves everything as a Delta table. Adapt the volume path to your own.',
       },
       exercise: {
-        prompt: 'Using samples.nyctaxi.trips, create workspace.default.fare_by_distance with the average fare per distance band: "short" (< 2 miles), "medium" (2 to 10), and "long" (> 10).',
+        prompt: 'Using samples.nyctaxi.trips, create <your_catalog>.default.fare_by_distance with the average fare per distance band: "short" (< 2 miles), "medium" (2 to 10), and "long" (> 10).',
         hint: 'Use a CTE with CASE WHEN to calculate the band, then group.',
-        solution: { language: 'sql', code: `CREATE OR REPLACE TABLE workspace.default.fare_by_distance AS\nWITH bands AS (\n  SELECT fare_amount,\n         CASE\n           WHEN trip_distance < 2 THEN 'short'\n           WHEN trip_distance <= 10 THEN 'medium'\n           ELSE 'long'\n         END AS band\n  FROM samples.nyctaxi.trips\n)\nSELECT band, ROUND(AVG(fare_amount), 2) AS average_fare, COUNT(*) AS trips\nFROM bands\nGROUP BY band;` },
+        solution: { language: 'sql', code: `CREATE OR REPLACE TABLE <your_catalog>.default.fare_by_distance AS\nWITH bands AS (\n  SELECT fare_amount,\n         CASE\n           WHEN trip_distance < 2 THEN 'short'\n           WHEN trip_distance <= 10 THEN 'medium'\n           ELSE 'long'\n         END AS band\n  FROM samples.nyctaxi.trips\n)\nSELECT band, ROUND(AVG(fare_amount), 2) AS average_fare, COUNT(*) AS trips\nFROM bands\nGROUP BY band;` },
       },
       quiz: [
         { question: 'What does CREATE OR REPLACE TABLE ... AS SELECT do?', options: ['Creates a temporary view', 'Creates or replaces a table with the query result', 'Adds rows to an existing table'], answer: 1, explanation: 'CTAS materializes the result; OR REPLACE replaces the table if it already existed.' },
@@ -128,26 +128,27 @@
         'SQL window functions (ROW_NUMBER, RANK).',
       ],
       concepts: [
-        { title: 'Driver and executors', body: 'The driver runs your program, builds the plan, and distributes the work. Executors process data partitions in parallel. A job is divided into stages, and each stage into tasks, one per partition. More partitions allow more parallelism, up to a point.' },
-        { title: 'Lazy evaluation and the DAG', body: 'Transformations (filter, select, groupBy) do not execute when you write them: Spark builds a graph (DAG). Only an action (count, show, write) triggers computation. This lets Spark optimize the entire plan before reading a single piece of data.' },
+        { title: 'Driver and executors', body: 'The driver coordinates: it receives the plan, optimizes it, and distributes the work. On serverless, your notebook is a Spark Connect client that sends the plan to a remote driver. Executors process data partitions in parallel. A job is divided into stages, and each stage into tasks, one per partition. More partitions allow more parallelism, up to a point.' },
+        { title: 'Lazy evaluation and the DAG', body: 'Transformations (filter, select, groupBy) do not execute when you write them: Spark builds a graph (DAG). Only an action (count, show, write) triggers computation. This lets Spark optimize the entire plan before processing the data; reading the schema or calling explain() only requests an analysis of the plan, not the full job.' },
         { title: 'Logical and physical plans', body: 'The Catalyst optimizer turns your code into a logical plan, optimizes it (for example, by pushing filters down to the read), and chooses a physical plan. df.explain() shows that plan: looking for Exchange tells you where there is a shuffle, which moves data between executors and is usually the most expensive part.' },
-        { title: 'Native functions before UDFs', body: 'pyspark.sql.functions offers hundreds of optimized functions. A Python UDF forces data to move between the JVM and Python row by row, and Catalyst cannot optimize it. Use one only when there is no equivalent native function.' },
+        { title: 'Native functions before UDFs', body: 'pyspark.sql.functions offers hundreds of optimized functions. A Python UDF is opaque logic for the optimizer and Photon does not run it; pandas UDFs process batches with Arrow, but they are still opaque. Use one only when there is no equivalent native function.' },
         { title: 'Window functions', body: 'A window calculates values over a group of related rows without collapsing them, unlike groupBy. Window.partitionBy defines the group and orderBy defines the order. Windows are useful for rankings, running totals, and comparing each row with the previous one (lag).' },
       ],
       example: {
         title: 'Ranking trips by area with a window', language: 'python',
-        code: `from pyspark.sql import functions as F\nfrom pyspark.sql.window import Window\n\ntrips = spark.read.table("samples.nyctaxi.trips")\n\nwindow = Window.partitionBy("pickup_zip").orderBy(F.col("fare_amount").desc())\n\ntop = (trips\n    .filter(F.col("fare_amount") > 0)\n    .withColumn("position", F.row_number().over(window))\n    .filter(F.col("position") <= 3))\n\ntop.explain()   # nothing has executed yet\ndisplay(top)    # the action triggers computation`,
+        code: `from pyspark.sql import functions as F\nfrom pyspark.sql.window import Window\n\ntrips = spark.read.table("samples.nyctaxi.trips")\n\nwindow = Window.partitionBy("pickup_zip").orderBy(F.col("fare_amount").desc())\n\ntop = (trips\n    .filter(F.col("fare_amount") > 0)\n    .withColumn("position", F.row_number().over(window))\n    .filter(F.col("position") <= 3))\n\ntop.explain()   # analyzes the plan without running the full job\ndisplay(top)    # the action triggers computation`,
         explanation: 'All lines before display only build the plan. explain() lets you see the shuffle generated by partitionBy. display is the action that executes the work on the executors.',
       },
       exercise: {
         prompt: 'For each pickup area, calculate the total fare and add a column with the difference between each trip fare and the average for its area.',
         hint: 'Use F.avg over a window with Window.partitionBy("pickup_zip"), without orderBy.',
-        solution: { language: 'python', code: `from pyspark.sql import functions as F\nfrom pyspark.sql.window import Window\n\nby_area = Window.partitionBy("pickup_zip")\n\nresult = (spark.read.table("samples.nyctaxi.trips")\n    .withColumn("area_average", F.avg("fare_amount").over(by_area))\n    .withColumn("difference", F.round(F.col("fare_amount") - F.col("area_average"), 2)))\n\ndisplay(result.select("pickup_zip", "fare_amount", "area_average", "difference"))` },
+        solution: { language: 'python', code: `from pyspark.sql import functions as F\nfrom pyspark.sql.window import Window\n\nby_area = Window.partitionBy("pickup_zip")\n\nresult = (spark.read.table("samples.nyctaxi.trips")\n    .withColumn("area_total_fare", F.sum("fare_amount").over(by_area))
+    .withColumn("area_average", F.avg("fare_amount").over(by_area))\n    .withColumn("difference", F.round(F.col("fare_amount") - F.col("area_average"), 2)))\n\ndisplay(result.select("pickup_zip", "fare_amount", "area_total_fare", "area_average", "difference"))` },
       },
       quiz: [
         { question: 'Which of these operations is an action?', options: ['filter', 'withColumn', 'count'], answer: 2, explanation: 'count returns a result to the driver, so it triggers execution.' },
         { question: 'Which component processes data partitions in parallel?', options: ['The driver', 'The executors', 'The control plane'], answer: 1, explanation: 'The driver coordinates; the executors run the tasks.' },
-        { question: 'Why should you avoid a Python UDF if a native function exists?', options: ['Because UDFs do not allow strings', 'Because Catalyst cannot optimize it and it serializes row by row', 'Because they only work in SQL'], answer: 1, explanation: 'Native functions run inside the optimized engine.' },
+        { question: 'Why should you avoid a Python UDF if a native function exists?', options: ['Because UDFs do not allow strings', 'Because it is opaque logic for the optimizer and Photon does not run it', 'Because they only work in SQL'], answer: 1, explanation: 'Native functions run inside the optimized engine.' },
         { question: 'In a physical plan, what does an Exchange node usually indicate?', options: ['A data shuffle between executors', 'A syntax error', 'A cache read'], answer: 0, explanation: 'Exchange represents data redistribution, usually for joins or aggregations.' },
         { question: 'Unlike groupBy, a window function...', options: ['Deletes the original rows', 'Keeps each row and adds a calculation over its group', 'Only works with numbers'], answer: 1, explanation: 'The window does not collapse rows: it adds the calculation to each one.' },
       ],
@@ -189,13 +190,13 @@
       ],
       example: {
         title: 'A silver step with validation and quarantine', language: 'python',
-        code: `from pyspark.sql import functions as F\n\nbronze = spark.read.table("workspace.default.sales_bronze")\n\nvalid_condition = F.col("sale_id").isNotNull() & (F.col("amount") > 0)\n\nvalid = (bronze.filter(valid_condition)\n    .dropDuplicates(["sale_id"])\n    .withColumn("date", F.to_date("date")))\ninvalid = bronze.filter(~valid_condition)\n\ntry:\n    valid.write.mode("overwrite").saveAsTable("workspace.default.sales_silver")\n    invalid.write.mode("append").saveAsTable("workspace.default.sales_quarantine")\nexcept Exception as error:\n    print(f"Silver load failed: {error}")\n    raise  # the job must end in failure, not success`,
-        explanation: 'Rows that do not meet the rules go to quarantine for review. The try block records the problem and re-raises the exception so the job does not finish successfully.',
+        code: `from pyspark.sql import functions as F\nfrom pyspark.sql.window import Window\n\nbronze = spark.read.table("<your_catalog>.default.sales_bronze")\n\n# coalesce: a null amount would make the condition null and drop the row from both filters\nvalid_condition = F.coalesce(F.col("sale_id").isNotNull() & (F.col("amount") > 0), F.lit(False))\n\n# Explicit rule: for each sale_id, the record with the latest date wins\nlatest = Window.partitionBy("sale_id").orderBy(F.col("date").desc())\nvalid = (bronze.filter(valid_condition)\n    .withColumn("rn", F.row_number().over(latest))\n    .filter("rn = 1").drop("rn")\n    .withColumn("date", F.to_date("date")))\ninvalid = bronze.filter(~valid_condition)\n\ntry:\n    valid.write.mode("overwrite").saveAsTable("<your_catalog>.default.sales_silver")\n    # overwrite: rerunning the load does not duplicate the quarantine\n    invalid.write.mode("overwrite").saveAsTable("<your_catalog>.default.sales_quarantine")\nexcept Exception as error:\n    print(f"Silver load failed: {error}")\n    raise  # the job must end in failure, not success`,
+        explanation: 'Every row ends in silver or in quarantine: coalesce keeps a null amount from dropping it from both. Deduplication states which record wins, and the quarantine is overwritten so a rerun does not duplicate it. These are two separate writes, not a single transaction. The try block re-raises the exception so the job does not finish successfully.',
       },
       exercise: {
-        prompt: 'Write how you would read a CSV from ADLS using a service principal whose credentials are in the "kv-course" secret scope. State which values you would store as secrets.',
+        prompt: 'Write how you would read a CSV from ADLS using a service principal whose credentials are in the "kv-course" secret scope. State which values you would store as secrets. This is a legacy configuration for classic compute: it is not used on serverless or in Free Edition.',
         hint: 'You need a client id, client secret, and tenant id; Spark options use the fs.azure.account prefix.',
-        solution: { language: 'python', code: `account = "mydataaccount"\nscope = "kv-course"\nsuffix = f"{account}.dfs.core.windows.net"\n\nspark.conf.set(f"fs.azure.account.auth.type.{suffix}", "OAuth")\nspark.conf.set(f"fs.azure.account.oauth.provider.type.{suffix}",\n               "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")\nspark.conf.set(f"fs.azure.account.oauth2.client.id.{suffix}", dbutils.secrets.get(scope, "sp-client-id"))\nspark.conf.set(f"fs.azure.account.oauth2.client.secret.{suffix}", dbutils.secrets.get(scope, "sp-client-secret"))\ntenant = dbutils.secrets.get(scope, "tenant-id")\nspark.conf.set(f"fs.azure.account.oauth2.client.endpoint.{suffix}",\n               f"https://login.microsoftonline.com/{tenant}/oauth2/token")\n\ndf = spark.read.option("header", True).csv(f"abfss://raw@{suffix}/sales/")\n\n# In Unity Catalog, an external location with a storage credential is recommended.` },
+        solution: { language: 'python', code: `account = "mydataaccount"\nscope = "kv-course"\nsuffix = f"{account}.dfs.core.windows.net"\n\nspark.conf.set(f"fs.azure.account.auth.type.{suffix}", "OAuth")\nspark.conf.set(f"fs.azure.account.oauth.provider.type.{suffix}",\n               "org.apache.hadoop.fs.azurebfs.oauth2.ClientCredsTokenProvider")\nspark.conf.set(f"fs.azure.account.oauth2.client.id.{suffix}", dbutils.secrets.get(scope, "sp-client-id"))\nspark.conf.set(f"fs.azure.account.oauth2.client.secret.{suffix}", dbutils.secrets.get(scope, "sp-client-secret"))\ntenant = dbutils.secrets.get(scope, "tenant-id")\nspark.conf.set(f"fs.azure.account.oauth2.client.endpoint.{suffix}",\n               f"https://login.microsoftonline.com/{tenant}/oauth2/token")\n\ndf = spark.read.option("header", True).csv(f"abfss://raw@{suffix}/sales/")\n\n# Legacy configuration: today Unity Catalog with a storage credential\n# (managed identity with an Access Connector) and an external location is recommended.` },
       },
       quiz: [
         { question: 'Which layer stores data exactly as it arrives from the source?', options: ['Gold', 'Silver', 'Bronze'], answer: 2, explanation: 'Bronze preserves raw data so it can be reprocessed.' },
@@ -243,13 +244,13 @@
       ],
       example: {
         title: 'Customer upsert with MERGE', language: 'sql',
-        code: `MERGE INTO workspace.default.customers AS target\nUSING workspace.default.updated_customers AS source\nON target.customer_id = source.customer_id\nWHEN MATCHED THEN\n  UPDATE SET email = source.email, city = source.city\nWHEN NOT MATCHED THEN\n  INSERT (customer_id, email, city)\n  VALUES (source.customer_id, source.email, source.city);\n\nDESCRIBE HISTORY workspace.default.customers;\nSELECT * FROM workspace.default.customers VERSION AS OF 0;`,
+        code: `MERGE INTO <your_catalog>.default.customers AS target\nUSING <your_catalog>.default.updated_customers AS source\nON target.customer_id = source.customer_id\nWHEN MATCHED THEN\n  UPDATE SET email = source.email, city = source.city\nWHEN NOT MATCHED THEN\n  INSERT (customer_id, email, city)\n  VALUES (source.customer_id, source.email, source.city);\n\nDESCRIBE HISTORY <your_catalog>.default.customers;\nSELECT * FROM <your_catalog>.default.customers VERSION AS OF 0;`,
         explanation: 'MERGE updates existing customers and inserts new ones in a single transaction. DESCRIBE HISTORY shows the new version, and VERSION AS OF 0 lets you compare with the initial state.',
       },
       exercise: {
         prompt: 'Accidentally delete all rows from a test table and recover it. Then create a new table with liquid clustering by date.',
         hint: 'Check DESCRIBE HISTORY to find the version to return to and use RESTORE TABLE ... TO VERSION AS OF.',
-        solution: { language: 'sql', code: `CREATE OR REPLACE TABLE workspace.default.test AS\nSELECT * FROM samples.nyctaxi.trips LIMIT 100;\n\nDELETE FROM workspace.default.test;          -- the "mistake"\nDESCRIBE HISTORY workspace.default.test;     -- version 0 has the data\nRESTORE TABLE workspace.default.test TO VERSION AS OF 0;\n\nCREATE OR REPLACE TABLE workspace.default.clustered_trips\nCLUSTER BY (date)\nAS SELECT to_date(tpep_pickup_datetime) AS date, * FROM samples.nyctaxi.trips;` },
+        solution: { language: 'sql', code: `CREATE OR REPLACE TABLE <your_catalog>.default.test AS\nSELECT * FROM samples.nyctaxi.trips LIMIT 100;\n\nDELETE FROM <your_catalog>.default.test;          -- the "mistake"\nDESCRIBE HISTORY <your_catalog>.default.test;     -- version 0 has the data\nRESTORE TABLE <your_catalog>.default.test TO VERSION AS OF 0;\n\nCREATE OR REPLACE TABLE <your_catalog>.default.clustered_trips\nCLUSTER BY (date)\nAS SELECT to_date(tpep_pickup_datetime) AS date, * FROM samples.nyctaxi.trips;` },
       },
       quiz: [
         { question: 'Where does Delta store information about each version?', options: ['In the _delta_log directory', 'In file names', 'In the control plane'], answer: 0, explanation: 'The transaction log orders each commit.' },
@@ -297,13 +298,13 @@
       ],
       example: {
         title: 'Incremental ingestion with Auto Loader', language: 'python',
-        code: `source = "/Volumes/workspace/default/raw/sales_json/"\ncheckpoint = "/Volumes/workspace/default/checkpoints/sales_bronze/"\n\n(spark.readStream\n    .format("cloudFiles")\n    .option("cloudFiles.format", "json")\n    .option("cloudFiles.schemaLocation", checkpoint)\n    .load(source)\n    .writeStream\n    .option("checkpointLocation", checkpoint)\n    .trigger(availableNow=True)\n    .toTable("workspace.default.sales_bronze"))`,
+        code: `source = "/Volumes/<your_catalog>/default/raw/sales_json/"\ncheckpoint = "/Volumes/<your_catalog>/default/checkpoints/sales_bronze/"\n\n(spark.readStream\n    .format("cloudFiles")\n    .option("cloudFiles.format", "json")\n    .option("cloudFiles.schemaLocation", checkpoint)\n    .load(source)\n    .writeStream\n    .option("checkpointLocation", checkpoint)\n    .trigger(availableNow=True)\n    .toTable("<your_catalog>.default.sales_bronze"))`,
         explanation: 'The first run loads all existing files. Later runs only read new files, because the checkpoint remembers which ones have already been processed.',
       },
       exercise: {
-        prompt: 'Write a COPY INTO that loads CSV files with headers from /Volumes/workspace/default/raw/customers/ into workspace.default.customers_bronze. What happens if you run it twice?',
+        prompt: 'Write a COPY INTO that loads CSV files with headers from /Volumes/<your_catalog>/default/raw/customers/ into <your_catalog>.default.customers_bronze. What happens if you run it twice?',
         hint: 'Create the empty table first and use FORMAT_OPTIONS and COPY_OPTIONS.',
-        solution: { language: 'sql', code: `CREATE TABLE IF NOT EXISTS workspace.default.customers_bronze;\n\nCOPY INTO workspace.default.customers_bronze\nFROM '/Volumes/workspace/default/raw/customers/'\nFILEFORMAT = CSV\nFORMAT_OPTIONS ('header' = 'true', 'inferSchema' = 'true')\nCOPY_OPTIONS ('mergeSchema' = 'true');\n\n-- The second run does not duplicate data: COPY INTO skips already loaded files.` },
+        solution: { language: 'sql', code: `CREATE TABLE IF NOT EXISTS <your_catalog>.default.customers_bronze;\n\nCOPY INTO <your_catalog>.default.customers_bronze\nFROM '/Volumes/<your_catalog>/default/raw/customers/'\nFILEFORMAT = CSV\nFORMAT_OPTIONS ('header' = 'true', 'inferSchema' = 'true')\nCOPY_OPTIONS ('mergeSchema' = 'true');\n\n-- The second run does not duplicate data: COPY INTO skips already loaded files.` },
       },
       quiz: [
         { question: 'What does the Auto Loader checkpoint store?', options: ['The table data', 'Progress: which files have already been processed', 'Passwords'], answer: 1, explanation: 'The checkpoint lets processing resume without repeating files.' },
@@ -350,7 +351,7 @@
       ],
       example: {
         title: 'A parameterized notebook for a job', language: 'python',
-        code: `dbutils.widgets.text("process_date", "2026-01-01")\ndate = dbutils.widgets.get("process_date")\n\nrows = (spark.read.table("workspace.default.sales_silver")\n    .filter(f"date = '{date}'")\n    .count())\n\n# Publish a value for subsequent job tasks\ndbutils.jobs.taskValues.set(key="rows_processed", value=rows)\nprint(f"{rows} rows for {date}")`,
+        code: `dbutils.widgets.text("process_date", "2026-01-01")\ndate = dbutils.widgets.get("process_date")\n\nrows = (spark.read.table("<your_catalog>.default.sales_silver")\n    .filter(f"date = '{date}'")\n    .count())\n\n# Publish a value for subsequent job tasks\ndbutils.jobs.taskValues.set(key="rows_processed", value=rows)\nprint(f"{rows} rows for {date}")`,
         explanation: 'You define the process_date parameter in the job; the widget takes its value. Later tasks can read rows_processed, for example to decide with an If/else whether to send a report.',
       },
       exercise: {
@@ -401,7 +402,7 @@
       ],
       example: {
         title: 'A notebook that receives and returns Data Factory values', language: 'python',
-        code: `import json\n\ndbutils.widgets.text("date", "")\ndate = dbutils.widgets.get("date")   # comes from baseParameters\n\nrows = spark.read.table("workspace.default.sales_silver").filter(f"date = '{date}'").count()\n\n# Data Factory reads this with @activity('Notebook').output.runOutput\ndbutils.notebook.exit(json.dumps({"date": date, "rows": rows}))`,
+        code: `import json\n\ndbutils.widgets.text("date", "")\ndate = dbutils.widgets.get("date")   # comes from baseParameters\n\nrows = spark.read.table("<your_catalog>.default.sales_silver").filter(f"date = '{date}'").count()\n\n# Data Factory reads this with @activity('Notebook').output.runOutput\ndbutils.notebook.exit(json.dumps({"date": date, "rows": rows}))`,
         explanation: 'In the activity, define baseParameters: { "date": "@pipeline().parameters.date" }. The JSON output lets the next activity decide, for example, whether rows is zero.',
       },
       exercise: {
@@ -454,7 +455,7 @@
       ],
       example: {
         title: 'A two-table pipeline in SQL', language: 'sql',
-        code: `-- Bronze: incremental ingestion with Auto Loader\nCREATE OR REFRESH STREAMING TABLE sales_bronze\nAS SELECT *\nFROM STREAM read_files('/Volumes/workspace/default/raw/sales_json/', format => 'json');\n\n-- Silver: with quality rules\nCREATE OR REFRESH STREAMING TABLE sales_silver (\n  CONSTRAINT id_present EXPECT (sale_id IS NOT NULL) ON VIOLATION DROP ROW,\n  CONSTRAINT valid_amount EXPECT (amount > 0)\n)\nAS SELECT sale_id, CAST(amount AS DOUBLE) AS amount, to_date(date) AS date\nFROM STREAM sales_bronze;\n\n-- Gold: aggregation maintained by the pipeline\nCREATE OR REFRESH MATERIALIZED VIEW sales_by_day\nAS SELECT date, SUM(amount) AS total FROM sales_silver GROUP BY date;`,
+        code: `-- Bronze: incremental ingestion with Auto Loader\nCREATE OR REFRESH STREAMING TABLE sales_bronze\nAS SELECT *\nFROM STREAM read_files('/Volumes/<your_catalog>/default/raw/sales_json/', format => 'json');\n\n-- Silver: with quality rules\nCREATE OR REFRESH STREAMING TABLE sales_silver (\n  CONSTRAINT id_present EXPECT (sale_id IS NOT NULL) ON VIOLATION DROP ROW,\n  CONSTRAINT valid_amount EXPECT (amount > 0)\n)\nAS SELECT sale_id, CAST(amount AS DOUBLE) AS amount, to_date(date) AS date\nFROM STREAM sales_bronze;\n\n-- Gold: aggregation maintained by the pipeline\nCREATE OR REFRESH MATERIALIZED VIEW sales_by_day\nAS SELECT date, SUM(amount) AS total FROM sales_silver GROUP BY date;`,
         explanation: 'No execution order is written: the pipeline infers that sales_silver depends on sales_bronze. id_present discards invalid rows, while valid_amount only records them in the metrics.',
       },
       exercise: {
@@ -562,7 +563,7 @@
       ],
       example: {
         title: 'Masking emails for people outside support', language: 'sql',
-        code: `CREATE OR REPLACE FUNCTION workspace.default.mask_email(email STRING)\nRETURNS STRING\nRETURN CASE\n  WHEN is_account_group_member('support') THEN email\n  ELSE '***@***'\nEND;\n\nALTER TABLE workspace.default.customers\nALTER COLUMN email SET MASK workspace.default.mask_email;`,
+        code: `CREATE OR REPLACE FUNCTION <your_catalog>.default.mask_email(email STRING)\nRETURNS STRING\nRETURN CASE\n  WHEN is_account_group_member('support') THEN email\n  ELSE '***@***'\nEND;\n\nALTER TABLE <your_catalog>.default.customers\nALTER COLUMN email SET MASK <your_catalog>.default.mask_email;`,
         explanation: 'Members of the support group see the real email; everyone else sees a masked value. The rule lives on the table, so it applies equally in notebooks, SQL, and dashboards.',
       },
       exercise: {
@@ -616,13 +617,13 @@
       ],
       example: {
         title: 'Reading Event Hubs and saving to Delta', language: 'python',
-        code: `from pyspark.sql import functions as F\n\nnamespace = "myevents"\nconnection = dbutils.secrets.get("kv-course", "eventhubs-connection-string")\njaas = ('kafkashaded.org.apache.kafka.common.security.plain.PlainLoginModule required '\n        f'username="$ConnectionString" password="{connection}";')\n\nevents = (spark.readStream.format("kafka")\n    .option("kafka.bootstrap.servers", f"{namespace}.servicebus.windows.net:9093")\n    .option("subscribe", "orders")\n    .option("kafka.security.protocol", "SASL_SSL")\n    .option("kafka.sasl.mechanism", "PLAIN")\n    .option("kafka.sasl.jaas.config", jaas)\n    .load()\n    .select(F.col("value").cast("string").alias("json"), "timestamp"))\n\n(events.writeStream\n    .option("checkpointLocation", "/Volumes/workspace/default/checkpoints/orders/")\n    .trigger(processingTime="10 seconds")\n    .toTable("workspace.default.orders_bronze"))`,
+        code: `from pyspark.sql import functions as F\n\nnamespace = "myevents"\nconnection = dbutils.secrets.get("kv-course", "eventhubs-connection-string")\njaas = ('kafkashaded.org.apache.kafka.common.security.plain.PlainLoginModule required '\n        f'username="$ConnectionString" password="{connection}";')\n\nevents = (spark.readStream.format("kafka")\n    .option("kafka.bootstrap.servers", f"{namespace}.servicebus.windows.net:9093")\n    .option("subscribe", "orders")\n    .option("kafka.security.protocol", "SASL_SSL")\n    .option("kafka.sasl.mechanism", "PLAIN")\n    .option("kafka.sasl.jaas.config", jaas)\n    .load()\n    .select(F.col("value").cast("string").alias("json"), "timestamp"))\n\n(events.writeStream\n    .option("checkpointLocation", "/Volumes/<your_catalog>/default/checkpoints/orders/")\n    .trigger(processingTime="10 seconds")\n    .toTable("<your_catalog>.default.orders_bronze"))`,
         explanation: 'The event hub is read as a Kafka topic. value arrives as bytes and is converted to text. A micro-batch is processed every 10 seconds, and the checkpoint remembers how far it has read.',
       },
       exercise: {
         prompt: 'Starting from orders_bronze, count orders in 5-minute windows, allowing events up to 10 minutes late.',
         hint: 'Use withWatermark on the timestamp column and groupBy(F.window(...)).',
-        solution: { language: 'python', code: `from pyspark.sql import functions as F\n\ncounts = (spark.readStream.table("workspace.default.orders_bronze")\n    .withWatermark("timestamp", "10 minutes")\n    .groupBy(F.window("timestamp", "5 minutes"))\n    .count())\n\n(counts.writeStream\n    .outputMode("append")\n    .option("checkpointLocation", "/Volumes/workspace/default/checkpoints/orders_5min/")\n    .toTable("workspace.default.orders_by_5min"))` },
+        solution: { language: 'python', code: `from pyspark.sql import functions as F\n\ncounts = (spark.readStream.table("<your_catalog>.default.orders_bronze")\n    .withWatermark("timestamp", "10 minutes")\n    .groupBy(F.window("timestamp", "5 minutes"))\n    .count())\n\n(counts.writeStream\n    .outputMode("append")\n    .option("checkpointLocation", "/Volumes/<your_catalog>/default/checkpoints/orders_5min/")\n    .toTable("<your_catalog>.default.orders_by_5min"))` },
       },
       quiz: [
         { question: 'What allows two applications to read the same event hub independently?', options: ['Consumer groups', 'Partitions', 'Watermarks'], answer: 0, explanation: 'Each consumer group maintains its own read position.' },
@@ -777,7 +778,7 @@
       ],
       example: {
         title: 'Classifying comments with AI from SQL', language: 'sql',
-        code: `SELECT comment,\n       ai_classify(comment, ARRAY('positive', 'negative', 'neutral')) AS sentiment,\n       ai_query(\n         'databricks-meta-llama-3-3-70b-instruct',  -- use an endpoint from your Serving page\n         CONCAT('Summarize in one sentence in English: ', comment)\n       ) AS summary\nFROM workspace.default.customer_comments\nLIMIT 20;`,
+        code: `SELECT comment,\n       ai_classify(comment, ARRAY('positive', 'negative', 'neutral')) AS sentiment,\n       ai_query(\n         'databricks-meta-llama-3-3-70b-instruct',  -- use an endpoint from your Serving page\n         CONCAT('Summarize in one sentence in English: ', comment)\n       ) AS summary\nFROM <your_catalog>.default.customer_comments\nLIMIT 20;`,
         explanation: 'ai_classify chooses one of the given labels; ai_query sends a custom prompt to a model. Start with LIMIT to control cost, and check Serving to see which endpoints exist in your workspace.',
       },
       exercise: {
@@ -831,13 +832,13 @@
       ],
       example: {
         title: 'A Unity Catalog function as a tool', language: 'sql',
-        code: `CREATE OR REPLACE FUNCTION workspace.default.customer_sales(requested_customer_id STRING)\nRETURNS TABLE (date DATE, amount DOUBLE)\nCOMMENT 'Returns a customer\'\'s purchases. Use it when asked what a customer bought.'\nRETURN\n  SELECT date, amount\n  FROM workspace.default.sales_silver\n  WHERE customer_id = requested_customer_id;`,
+        code: `CREATE OR REPLACE FUNCTION <your_catalog>.default.customer_sales(requested_customer_id STRING)\nRETURNS TABLE (date DATE, amount DOUBLE)\nCOMMENT 'Returns a customer\'\'s purchases. Use it when asked what a customer bought.'\nRETURN\n  SELECT date, amount\n  FROM <your_catalog>.default.sales_silver\n  WHERE customer_id = requested_customer_id;`,
         explanation: 'The comment acts as a description for the model. Because the function is in Unity Catalog, the agent can use it only if it has EXECUTE permission, and its use is audited.',
       },
       exercise: {
         prompt: 'Write the basic agent loop in Python with one tool, using the OpenAI-compatible client offered by Databricks.',
         hint: 'Send the tools list; if the model requests a tool_call, execute the function, add the result as a message with role "tool", and call the model again.',
-        solution: { language: 'python', code: `import json\nfrom databricks.sdk import WorkspaceClient\n\nclient = WorkspaceClient().serving_endpoints.get_open_ai_client()\nMODEL = "databricks-meta-llama-3-3-70b-instruct"  # an endpoint in your workspace\n\ndef customer_sales(requested_customer_id):\n    rows = spark.sql("SELECT * FROM workspace.default.customer_sales(:id)", args={"id": requested_customer_id}).collect()\n    return [r.asDict() for r in rows]\n\ntools = [{"type": "function", "function": {\n    "name": "customer_sales",\n    "description": "Returns a customer's purchases",\n    "parameters": {"type": "object", "properties": {"requested_customer_id": {"type": "string"}}, "required": ["requested_customer_id"]}}}]\n\nmessages = [{"role": "user", "content": "What did customer C-42 buy?"}]\nfor _ in range(5):  # step limit\n    response = client.chat.completions.create(model=MODEL, messages=messages, tools=tools)\n    message = response.choices[0].message\n    if not message.tool_calls:\n        print(message.content)\n        break\n    messages.append(message)\n    for call in message.tool_calls:\n        args = json.loads(call.function.arguments)\n        result = customer_sales(**args)\n        messages.append({"role": "tool", "tool_call_id": call.id, "content": json.dumps(result, default=str)})` },
+        solution: { language: 'python', code: `import json\nfrom databricks.sdk import WorkspaceClient\n\nclient = WorkspaceClient().serving_endpoints.get_open_ai_client()\nMODEL = "databricks-meta-llama-3-3-70b-instruct"  # an endpoint in your workspace\n\ndef customer_sales(requested_customer_id):\n    rows = spark.sql("SELECT * FROM <your_catalog>.default.customer_sales(:id)", args={"id": requested_customer_id}).collect()\n    return [r.asDict() for r in rows]\n\ntools = [{"type": "function", "function": {\n    "name": "customer_sales",\n    "description": "Returns a customer's purchases",\n    "parameters": {"type": "object", "properties": {"requested_customer_id": {"type": "string"}}, "required": ["requested_customer_id"]}}}]\n\nmessages = [{"role": "user", "content": "What did customer C-42 buy?"}]\nfor _ in range(5):  # step limit\n    response = client.chat.completions.create(model=MODEL, messages=messages, tools=tools)\n    message = response.choices[0].message\n    if not message.tool_calls:\n        print(message.content)\n        break\n    messages.append(message)\n    for call in message.tool_calls:\n        args = json.loads(call.function.arguments)\n        result = customer_sales(**args)\n        messages.append({"role": "tool", "tool_call_id": call.id, "content": json.dumps(result, default=str)})` },
       },
       quiz: [
         { question: 'What distinguishes an agent from a simple chat?', options: ['It can decide to use tools and act', 'It responds faster', 'It does not use an LLM'], answer: 0, explanation: 'The agent reasons, executes tools, and observes results.' },

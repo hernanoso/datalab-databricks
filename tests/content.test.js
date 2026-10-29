@@ -82,3 +82,13 @@ for (const s of sessions) {
     }
   });
 }
+
+// Free Edition does not guarantee a catalog named "workspace": learners find
+// theirs with current_catalog() and replace a placeholder.
+test('base sessions never hardcode the workspace catalog', () => {
+  require('../data/sessions.en.js');
+  for (const lang of ['es', 'en']) {
+    const text = JSON.stringify(globalThis.DataLab.content[lang]);
+    assert.doesNotMatch(text, /workspace\.default|\/Volumes\/workspace\//, `${lang} hardcodes the workspace catalog`);
+  }
+});
