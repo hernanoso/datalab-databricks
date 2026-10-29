@@ -59,6 +59,11 @@ Both languages must keep the same sessions, quiz answers and reference URLs;
 the tests enforce it. A new deep file also needs its `<script>` tag in
 `index.html`, after the session data and before `app.js`.
 
+GitHub Pages lets browsers reuse files for 10 minutes, so every script and
+stylesheet in `index.html` carries the same `?v=` version. Change that
+version in every tag whenever you publish; the tests check that all tags
+share one version.
+
 ## Tests
 
 ```bash

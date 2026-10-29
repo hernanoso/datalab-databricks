@@ -23,7 +23,7 @@ test('every deep file is loaded by index.html and named after its session', () =
   const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
   for (const lang of ['es', 'en']) {
     for (const f of files(lang)) {
-      assert.ok(html.includes(`src="data/deep/${lang}/${f}"`), `index.html misses data/deep/${lang}/${f}`);
+      assert.ok(html.includes(`src="data/deep/${lang}/${f}?v=`), `index.html misses data/deep/${lang}/${f}`);
       const id = f.replace('.js', '');
       assert.ok(deep[lang] && deep[lang][id], `${lang}/${f} must define DataLab.deep.${lang}.${id}`);
     }
