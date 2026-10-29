@@ -18,6 +18,7 @@ test('every mock screen is titled in both languages and has unique, labeled targ
   assert.ok(screens.length >= 4, 'home, New menu, Catalog and notebook screens');
   for (const [id, screen] of screens) {
     assert.ok(screen.title.es && screen.title.en, `${id} title`);
+    if (screen.product) assert.ok(['Databricks', 'Azure portal', 'Azure Data Factory', 'Power BI', 'GitHub', 'Azure Event Hubs', 'Azure Stream Analytics'].includes(screen.product), `${id} product ${screen.product}`);
     assert.ok(screen.regions.length >= 1, `${id} regions`);
     const targets = screen.regions.flatMap((region) => region.targets);
     assert.equal(new Set(targets.map((t) => t.id)).size, targets.length, `${id} duplicate target ids`);

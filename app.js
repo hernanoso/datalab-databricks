@@ -252,9 +252,10 @@
     const { interactive = false, selected = null, disabled = false, highlight = [], answer = null, onSelect } = options;
     const box = el('div', null, `mock${interactive ? ' is-interactive' : ''}`);
     box.setAttribute('role', 'group');
-    box.setAttribute('aria-label', t('mockLabel', { title: screen.title[lang] || screen.title.es }));
+    const product = screen.product || 'Databricks';
+    box.setAttribute('aria-label', t('mockLabel', { product, title: screen.title[lang] || screen.title.es }));
     const bar = el('div', null, 'mock-bar');
-    bar.append(el('span', 'Databricks', 'mock-logo'), el('span', screen.title[lang] || screen.title.es, 'mock-title'));
+    bar.append(el('span', product, 'mock-logo'), el('span', screen.title[lang] || screen.title.es, 'mock-title'));
     const body = el('div', null, 'mock-body');
     const side = el('div', null, 'mock-side');
     const content = el('div', null, 'mock-content');
