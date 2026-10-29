@@ -5,6 +5,8 @@ const path = require('node:path');
 
 require('../lib/mockui.js');
 const root = path.join(__dirname, '..');
+const screenFiles = fs.readdirSync(path.join(root, 'data', 'screens')).filter((f) => f.endsWith('.js')).sort();
+screenFiles.forEach((f) => require(path.join(root, 'data', 'screens', f)));
 for (const lang of ['es', 'en']) {
   fs.readdirSync(path.join(root, 'data', 'deep', lang)).filter((f) => f.endsWith('.js')).forEach((f) => require(path.join(root, 'data', 'deep', lang, f)));
 }
@@ -20,7 +22,7 @@ test('every mock screen is titled in both languages and has unique, labeled targ
     const targets = screen.regions.flatMap((region) => region.targets);
     assert.equal(new Set(targets.map((t) => t.id)).size, targets.length, `${id} duplicate target ids`);
     for (const target of targets) for (const lang of ['es', 'en']) assert.ok(label(target.label, lang), `${id}.${target.id} label (${lang})`);
-    for (const region of screen.regions) assert.ok(['sidebar', 'menu', 'tree', 'toolbar', 'main'].includes(region.kind), `${id} region kind ${region.kind}`);
+    for (const region of screen.regions) assert.ok(['sidebar', 'menu', 'tree', 'toolbar', 'main', 'form', 'tabs'].includes(region.kind), `${id} region kind ${region.kind}`);
   }
 });
 
@@ -52,3 +54,23 @@ for (const lang of ['es', 'en']) {
     });
   }
 }
+
+test('register adds session screens and rejects duplicates or unprefixed ids', () => {
+  mockui.register('s99', { 's99-demo': { title: { es: 'Demo', en: 'Demo' }, regions: [{ kind: 'form', targets: [{ id: 'ok', label: 'OK' }] }] } });
+  assert.equal(mockui.target('s99-demo', 'ok').label, 'OK');
+  assert.throws(() => mockui.register('s99', { 's99-demo': { title: { es: 'x', en: 'x' }, regions: [] } }), /duplicate screen s99-demo/);
+  assert.throws(() => mockui.register('s99', { home: { title: { es: 'x', en: 'x' }, regions: [] } }), /duplicate screen home/);
+  assert.throws(() => mockui.register('s98', { other: { title: { es: 'x', en: 'x' }, regions: [] } }), /must start with s98-/);
+  delete mockui.screens['s99-demo'];
+});
+
+test('every session screen file is loaded by index.html after lib/mockui.js', () => {
+  const html = fs.readFileSync(path.join(root, 'index.html'), 'utf8');
+  const mock = html.indexOf('src="lib/mockui.js?v=');
+  assert.ok(mock > 0, 'lib/mockui.js is loaded');
+  for (const f of screenFiles) {
+    const at = html.indexOf(`src="data/screens/${f}?v=`);
+    assert.ok(at > mock, `data/screens/${f} must load after lib/mockui.js`);
+    assert.ok(at < html.indexOf('src="app.js?v='), `data/screens/${f} must load before app.js`);
+  }
+});
