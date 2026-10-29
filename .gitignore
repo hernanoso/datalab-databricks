@@ -1,2 +1,4 @@
 node_modules/
 .scratch/
+# Feature tracking stays on the author machine.
+odd/

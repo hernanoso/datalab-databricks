@@ -6,6 +6,8 @@ has concepts explained from scratch, a worked example, an exercise with hint
 and solution, a self-assessment quiz, questions to bring to class, a glossary
 and links to the official documentation.
 
+Live site: <https://hernanoso.github.io/datalab-databricks/>
+
 The material is independent, original study content based on the brochure
 syllabus. It is not official Databricks or Smart Data material.
 
@@ -30,10 +32,11 @@ npm start            # python -m http.server 8080
 
 ## Share it with the class
 
-Any static host works because the site is only files. Two simple options:
+Share the live site link above. It is published with GitHub Pages from the
+`main` branch root (`.nojekyll` serves the files as they are), so every push
+to `main` updates it. Any other static host also works because the site is
+only files, for example:
 
-- **GitHub Pages**: push this repository to GitHub, then in
-  *Settings → Pages* publish from the branch root. Share the resulting URL.
 - **Netlify Drop**: drag the project folder onto <https://app.netlify.com/drop>.
 
 Publishing makes the content public to anyone with the link.
