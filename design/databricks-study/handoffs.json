@@ -3,12 +3,14 @@
   "chosen": "02-course-map.html",
   "handoffs": {
     "02-course-map.html": {
-      "status": "sent",
-      "queued": true,
-      "sentAt": "2026-10-29T01:20:46.379Z",
-      "startedAt": null,
-      "implementedAt": null,
-      "feature": "odd/tasks/databricks-study.md"
+      "status": "implemented",
+      "queued": false,
+      "sentAt": "2026-10-29T01:43:10.227Z",
+      "startedAt": "2026-10-29T01:43:26.527Z",
+      "implementedAt": "2026-10-29T01:47:23.483Z",
+      "feature": "odd/tasks/databricks-study.md",
+      "note": "Estructura del mapa del programa implementada: sin barra lateral, hero con pill y «Explorar las sesiones», fila de stats, 16 tarjetas con «Ver preparación» y enlace de vuelta al mapa en cada sesión. Se mantienen la paleta colorida (S5) y las pestañas Español/English (S7). Smoke en navegador 29/29, tests 96/96. Sin commit.",
+      "previewUrl": "http://127.0.0.1:8080/"
     }
   }
 }

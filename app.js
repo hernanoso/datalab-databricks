@@ -9,7 +9,6 @@
   let progress = D.progress.load(storage);
   let saveFailed = false;
   let languageFailed = false;
-  let menuOpen = false;
   // Preserve in-flight answers and feedback when the language changes.
   const quizStates = new Map();
   const app = document.getElementById('app');
@@ -80,39 +79,56 @@
     box.append(toolbar, pre);
     return box;
   }
+  // Program map (artboard 02): the home page is the only overview; there is no sidebar.
   function renderHome(main) {
     document.title = t('homeTitle');
     const all = sessions();
     const stats = D.progress.summary(progress, all.map((session) => session.id));
     const next = all.find((session) => !state(session).studied);
     const hero = el('section', null, 'hero');
-    hero.append(el('p', t('course'), 'eyebrow'), el('h1', t('hero')), el('p', t('intro')));
-    hero.append(next ? link(t('nextStudy', { number: next.number }), href(next.number), 'cta') : el('p', t('allStudied')));
+    const actions = el('div', null, 'hero-actions');
+    // A '#map' link would be read as an unknown route, so the action scrolls instead of navigating.
+    const explore = button(t('explore'), () => {
+      const heading = document.getElementById('map-heading');
+      const smooth = !globalThis.matchMedia('(prefers-reduced-motion: reduce)').matches;
+      heading.scrollIntoView({ behavior: smooth ? 'smooth' : 'auto', block: 'start' });
+      heading.focus({ preventScroll: true });
+    }, 'cta');
+    explore.id = 'explore';
+    actions.append(explore);
+    actions.append(next ? link(t('resume', { number: next.number }), href(next.number), 'resume-link') : el('p', t('allStudied')));
+    hero.append(el('p', t('heroPill', { total: all.length }), 'pill'), el('h1', t('hero')), el('p', t('intro'), 'lead'), actions);
     main.append(hero);
-    const statGrid = el('div', null, 'stats');
-    [[t('studiedCount', stats), t('studiedLabel')], [t('percent', stats), t('completeLabel')], [t('noAccounts'), t('localOnly')]].forEach(([value, label]) => {
+    const statRow = el('div', null, 'stats');
+    [[String(all.length), t('totalLabel')], [t('pace'), t('paceLabel')], [t('studiedCount', stats), t('completedLabel', stats)]].forEach(([value, label]) => {
       const stat = el('div', null, 'stat');
       stat.append(el('strong', value), el('span', label));
-      statGrid.append(stat);
+      statRow.append(stat);
     });
-    main.append(statGrid, el('h2', t('sessions')), el('p', t('sessionsIntro'), 'muted'));
+    main.append(statRow);
+    const map = el('section', null, 'map');
+    map.id = 'map';
+    map.setAttribute('aria-labelledby', 'map-heading');
+    const title = el('h2', t('mapTitle'));
+    title.id = 'map-heading';
+    title.tabIndex = -1;
+    map.append(el('p', t('mapEyebrow'), 'eyebrow'), title, el('p', t('mapIntro'), 'muted'));
     const grid = el('div', null, 'grid');
     all.forEach((session) => {
       const card = trackStyle(el('article', null, 'card'), session);
       card.lang = contentLanguage();
-      const top = el('div', null, 'card-top');
-      top.append(el('p', `${t('sessionNumber', { number: session.number })} · ${trackLabel(session)}`, 'eyebrow'), el('h3', session.title));
-      const body = el('div', null, 'card-body');
-      body.append(el('p', session.summary), el('p', t('minutes', session), 'muted'));
+      const meta = el('p', null, 'card-meta');
+      meta.append(el('span', t('sessionNumber', { number: String(session.number).padStart(2, '0') }), 'card-number'), el('span', trackLabel(session)));
       const foot = el('div', null, 'card-foot');
       status(session, foot);
-      const open = link(t('open'), href(session.number), 'open-link');
-      open.setAttribute('aria-label', `${t('open')} ${session.title}`);
+      const open = link(t('prep'), href(session.number), 'open-link');
+      open.setAttribute('aria-label', `${t('prep')} ${session.title}`);
       foot.append(open);
-      card.append(top, body, foot);
+      card.append(meta, el('h3', session.title), el('p', session.summary), el('p', t('minutes', session), 'muted'), foot);
       grid.append(card);
     });
-    main.append(grid);
+    map.append(grid);
+    main.append(map);
   }
   function renderQuiz(parent, session) {
     const area = section(parent, 'quiz');
@@ -192,6 +208,7 @@
     document.title = t('sessionTitle', session);
     const article = el('article', null, 'lesson');
     article.lang = contentLanguage();
+    article.append(link(t('backToMap'), '#/', 'back-link'));
     const header = trackStyle(el('div', null, 'lesson-header'), session);
     header.append(el('p', `${t('sessionNumber', session)} · ${trackLabel(session)} · ${t('minutes', session)}`, 'eyebrow'), el('h1', session.title), el('p', session.summary));
     article.append(header);
@@ -257,7 +274,9 @@
     app.replaceChildren();
     app.append(link(t('skip'), '#main', 'skip-link'));
     const header = el('header', null, 'site-header');
-    header.append(link(t('brand'), '#/', 'brand'));
+    const identity = el('div', null, 'identity');
+    identity.append(link(t('brand'), '#/', 'brand'), el('span', `/ ${t('tagline')}`, 'tagline'));
+    header.append(identity);
     const tabs = el('div', null, 'languages');
     tabs.setAttribute('role', 'tablist');
     tabs.setAttribute('aria-label', t('language'));
@@ -277,41 +296,11 @@
       tabs.append(tab);
     });
     header.append(tabs);
-    const menu = button(t('menu'), () => {
-      menuOpen = !menuOpen;
-      sidebar.classList.toggle('is-open', menuOpen);
-      menu.setAttribute('aria-expanded', String(menuOpen));
-    }, 'menu-button');
-    menu.setAttribute('aria-controls', 'session-sidebar');
-    menu.setAttribute('aria-expanded', String(menuOpen));
-    header.append(menu);
     app.append(header);
     const panel = el('div');
     panel.id = 'language-panel';
     panel.setAttribute('role', 'tabpanel');
     panel.setAttribute('aria-labelledby', `tab-${lang}`);
-    const shell = el('div', null, 'shell');
-    const sidebar = el('aside', null, `sidebar${menuOpen ? ' is-open' : ''}`);
-    sidebar.id = 'session-sidebar';
-    sidebar.append(el('h2', t('route')));
-    const nav = el('nav');
-    nav.setAttribute('aria-label', t('menu'));
-    nav.append(link(t('home'), '#/', 'home-link'));
-    sessions().forEach((session) => {
-      const a = trackStyle(link('', href(session.number)), session);
-      const badge = el('span', String(session.number).padStart(2, '0'), 'number');
-      const title = el('span', session.title);
-      title.lang = contentLanguage();
-      a.append(badge, title);
-      if (state(session).studied) {
-        const check = el('span', '✓', 'check');
-        check.setAttribute('aria-label', t('studied'));
-        a.append(check);
-      }
-      if (route.view === 'session' && route.number === session.number) a.setAttribute('aria-current', 'page');
-      nav.append(a);
-    });
-    sidebar.append(nav);
     const main = el('main');
     main.id = 'main';
     main.tabIndex = -1;
@@ -327,8 +316,7 @@
     else renderNotFound(main);
     const heading = main.querySelector('h1');
     if (heading) heading.tabIndex = -1;
-    shell.append(sidebar, main);
-    panel.append(shell);
+    panel.append(main);
     app.append(panel, el('footer', t('disclaimer')));
     if (focusId) document.getElementById(focusId)?.focus();
     else if (moveFocus && heading) heading.focus();
@@ -338,6 +326,6 @@
     const skip = event.target.closest('.skip-link');
     if (skip) { event.preventDefault(); document.getElementById('main').focus(); }
   });
-  globalThis.addEventListener('hashchange', () => { menuOpen = false; render(true); });
+  globalThis.addEventListener('hashchange', () => render(true));
   render(true);
 })(globalThis.DataLab);
