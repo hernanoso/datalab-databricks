@@ -1,0 +1,9 @@
+{
+  "name": "datalab-databricks-study",
+  "private": true,
+  "description": "Shareable preparation companion for a 16-session Databricks course.",
+  "scripts": {
+    "test": "node --test \"tests/*.test.js\"",
+    "start": "python -m http.server 8080"
+  }
+}
