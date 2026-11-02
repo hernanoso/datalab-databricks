@@ -340,13 +340,13 @@
       ],
       review: [
         'Sesión 4: las capas bronze, silver y gold.',
-        'Qué es una expresión cron (por ejemplo, todos los días a las 6:00).',
+        'Qué es una expresión cron; Databricks usa sintaxis Quartz con segundos (por ejemplo, 0 0 6 * * ? = todos los días a las 6:00).',
       ],
       concepts: [
         { title: 'Job, tarea y ejecución', body: 'Un job agrupa tareas: notebooks, scripts de Python, consultas SQL, pipelines o dbt. Las dependencias forman un grafo: silver espera a bronze y gold espera a silver. Cada vez que el job corre se crea una ejecución (run) con su propio historial.' },
-        { title: 'Disparadores', body: 'Un job puede correr manualmente, con un horario (cron), cuando llegan archivos a una ubicación, cuando se actualiza una tabla o de forma continua. Elegir bien el disparador evita ejecuciones vacías y reduce costos.' },
-        { title: 'Reintentos, timeouts y notificaciones', body: 'Los reintentos absorben fallas transitorias, como un corte de red. Un timeout corta tareas colgadas. Las notificaciones por correo u otros destinos avisan en caso de fallo. Si una tarea falla, repair run vuelve a ejecutar solo lo que falló y lo que depende de ello.' },
-        { title: 'Parámetros', body: 'Los parámetros del job (por ejemplo, fecha_proceso) llegan a los notebooks como widgets. Una tarea puede publicar valores con dbutils.jobs.taskValues.set y otra leerlos después. Así el mismo código sirve para reprocesar cualquier fecha.' },
+        { title: 'Disparadores', body: 'Un job puede correr manualmente, con un horario (cron), cuando llegan archivos a un volumen o external location de Unity Catalog, cuando se actualiza una tabla o de forma continua. Elegir bien el disparador evita ejecuciones vacías y reduce costos.' },
+        { title: 'Reintentos, timeouts y notificaciones', body: 'Los reintentos absorben fallas transitorias, como un corte de red; por defecto la mayoría de tareas no reintenta, pero en serverless la auto-optimización puede reintentar sola, así que desmárcala en trabajos no idempotentes. Un timeout corta tareas colgadas. Las notificaciones por correo u otros destinos avisan en caso de fallo. Si una tarea falla, repair run vuelve a ejecutar solo lo que falló y lo que depende de ello, con la configuración actual del job.' },
+        { title: 'Parámetros', body: 'Los parámetros del job (por ejemplo, fecha_proceso) llegan a los notebooks como widgets; si un parámetro de job y uno de tarea comparten clave, gana el del job. Una tarea puede publicar valores con dbutils.jobs.taskValues.set y otra leerlos después. Así el mismo código sirve para reprocesar cualquier fecha.' },
         { title: 'Permisos, tags y control de flujo', body: 'Los permisos definen quién puede ver, ejecutar o editar un job; los tags ayudan a atribuir costos. Las tareas If/else y For each permiten bifurcar o repetir pasos según una condición o una lista de valores.' },
       ],
       example: {
@@ -394,9 +394,9 @@
         'Necesitarás una suscripción de Azure: Free Edition no se integra con Data Factory.',
       ],
       concepts: [
-        { title: 'Las piezas de Data Factory', body: 'Un pipeline es una secuencia de actividades (copiar datos, ejecutar un notebook, una condición). Un linked service guarda cómo conectarse a un sistema; un dataset describe datos dentro de él. El integration runtime es el cómputo que ejecuta movimientos de datos, en la nube o en una red privada.' },
-        { title: 'Actividad Databricks Notebook', body: 'La actividad Notebook usa un linked service de Azure Databricks y ejecuta un notebook en un clúster. Los base parameters llegan al notebook como widgets, y el notebook puede devolver un valor con dbutils.notebook.exit.' },
-        { title: 'Orquestación y expresiones', body: 'Data Factory encadena actividades con dependencias de éxito, fallo o finalización. Las expresiones como @pipeline().parameters.fecha o @activity(\'Notebook\').output.runOutput pasan valores entre pasos. Los triggers programan pipelines o responden a eventos.' },
+        { title: 'Las piezas de Data Factory', body: 'Un pipeline es una secuencia de actividades (copiar datos, ejecutar un notebook, una condición). Un linked service guarda cómo conectarse a un sistema; un dataset describe datos dentro de él. El integration runtime es el cómputo que ejecuta data flows, mueve datos, despacha actividades a otros servicios y ejecuta paquetes SSIS, en la nube o en una red privada.' },
+        { title: 'Actividad Databricks Notebook', body: 'La actividad Notebook usa un linked service de Azure Databricks y ejecuta un notebook en un clúster. La actividad Job, en cambio, ejecuta un job de Lakeflow existente y puede correr en serverless. Los base parameters llegan al notebook como widgets, y el notebook puede devolver un valor con dbutils.notebook.exit.' },
+        { title: 'Orquestación y expresiones', body: 'Data Factory encadena actividades con las condiciones de dependencia Succeeded, Failed, Completed y Skipped. Las expresiones como @pipeline().parameters.fecha o @activity(\'Notebook\').output.runOutput pasan valores entre pasos. Los triggers programan pipelines o responden a eventos.' },
         { title: 'Mapping Data Flows', body: 'Los Data Flows permiten diseñar transformaciones visualmente, y Data Factory las ejecuta en Spark administrado. Son útiles para equipos que prefieren no escribir código, aunque para lógica compleja suele ser más flexible un notebook.' },
         { title: '¿Data Factory o Lakeflow Jobs?', body: 'Data Factory brilla cuando orquestas muchos sistemas de Azure y on-premise, o copias datos desde fuentes con conectores listos. Lakeflow Jobs es más simple cuando todo el procesamiento vive en Databricks. Muchas arquitecturas usan ambos.' },
       ],

@@ -340,13 +340,13 @@
       ],
       review: [
         'Session 4: the bronze, silver, and gold layers.',
-        'What a cron expression is (for example, every day at 6:00).',
+        'What a cron expression is; Databricks uses Quartz syntax with seconds (for example, 0 0 6 * * ? = every day at 6:00).',
       ],
       concepts: [
         { title: 'Job, task, and run', body: 'A job groups tasks: notebooks, Python scripts, SQL queries, pipelines, or dbt. Dependencies form a graph: silver waits for bronze and gold waits for silver. Each time the job runs, a run is created with its own history.' },
-        { title: 'Triggers', body: 'A job can run manually, on a schedule (cron), when files arrive at a location, when a table is updated, or continuously. Choosing the right trigger avoids empty runs and reduces costs.' },
-        { title: 'Retries, timeouts, and notifications', body: 'Retries absorb transient failures, such as a network outage. A timeout stops hung tasks. Email notifications or other destinations alert you on failure. If a task fails, repair run reruns only what failed and what depends on it.' },
-        { title: 'Parameters', body: 'Job parameters (for example, process_date) reach notebooks as widgets. One task can publish values with dbutils.jobs.taskValues.set and another can read them later. This lets the same code reprocess any date.' },
+        { title: 'Triggers', body: 'A job can run manually, on a schedule (cron), when files arrive in a Unity Catalog volume or external location, when a table is updated, or continuously. Choosing the right trigger avoids empty runs and reduces costs.' },
+        { title: 'Retries, timeouts, and notifications', body: 'Retries absorb transient failures, such as a network outage; by default most tasks do not retry, but on serverless auto-optimization may retry on its own, so clear it for non-idempotent work. A timeout stops hung tasks. Email notifications or other destinations alert you on failure. If a task fails, repair run reruns only what failed and what depends on it, using the current job settings.' },
+        { title: 'Parameters', body: 'Job parameters (for example, process_date) reach notebooks as widgets; if a job parameter and a task parameter share a key, the job parameter wins. One task can publish values with dbutils.jobs.taskValues.set and another can read them later. This lets the same code reprocess any date.' },
         { title: 'Permissions, tags, and control flow', body: 'Permissions define who can view, run, or edit a job; tags help attribute costs. If/else and For each tasks allow branching or repeating steps based on a condition or a list of values.' },
       ],
       example: {
@@ -394,9 +394,9 @@
         'You will need an Azure subscription: Free Edition does not integrate with Data Factory.',
       ],
       concepts: [
-        { title: 'The pieces of Data Factory', body: 'A pipeline is a sequence of activities (copying data, running a notebook, a condition). A linked service stores how to connect to a system; a dataset describes data within it. The integration runtime is the compute that executes data movements, in the cloud or on a private network.' },
-        { title: 'Databricks Notebook activity', body: 'The Notebook activity uses an Azure Databricks linked service and runs a notebook on a cluster. Base parameters reach the notebook as widgets, and the notebook can return a value with dbutils.notebook.exit.' },
-        { title: 'Orchestration and expressions', body: 'Data Factory chains activities with success, failure, or completion dependencies. Expressions such as @pipeline().parameters.date or @activity(\'Notebook\').output.runOutput pass values between steps. Triggers schedule pipelines or respond to events.' },
+        { title: 'The pieces of Data Factory', body: 'A pipeline is a sequence of activities (copying data, running a notebook, a condition). A linked service stores how to connect to a system; a dataset describes data within it. The integration runtime is the compute that runs data flows, moves data, dispatches activities to other services, and runs SSIS packages, in the cloud or on a private network.' },
+        { title: 'Databricks Notebook activity', body: 'The Notebook activity uses an Azure Databricks linked service and runs a notebook on a cluster. The Job activity, by contrast, runs an existing Lakeflow job and can run on serverless. Base parameters reach the notebook as widgets, and the notebook can return a value with dbutils.notebook.exit.' },
+        { title: 'Orchestration and expressions', body: 'Data Factory chains activities with the Succeeded, Failed, Completed, and Skipped dependency conditions. Expressions such as @pipeline().parameters.date or @activity(\'Notebook\').output.runOutput pass values between steps. Triggers schedule pipelines or respond to events.' },
         { title: 'Mapping Data Flows', body: 'Data Flows let you design transformations visually, and Data Factory runs them on managed Spark. They are useful for teams that prefer not to write code, although a notebook is usually more flexible for complex logic.' },
         { title: 'Data Factory or Lakeflow Jobs?', body: 'Data Factory shines when you orchestrate many Azure and on-premises systems or copy data from sources with ready-made connectors. Lakeflow Jobs is simpler when all processing lives in Databricks. Many architectures use both.' },
       ],
