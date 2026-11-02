@@ -237,10 +237,10 @@
       concepts: [
         { title: 'El registro de transacciones', body: 'Una tabla Delta son archivos Parquet más un directorio _delta_log con un registro ordenado de cambios. Cada escritura agrega una entrada nueva: si falla a mitad de camino, la entrada no se confirma y los lectores siguen viendo la versión anterior. Eso da atomicidad y aislamiento.' },
         { title: 'Time travel y RESTORE', body: 'Cada commit es una versión. DESCRIBE HISTORY muestra quién cambió qué. Puedes consultar VERSION AS OF o TIMESTAMP AS OF para ver el pasado, y RESTORE TABLE para volver a una versión anterior después de un error.' },
-        { title: 'Schema enforcement y evolution', body: 'Por defecto Delta rechaza escrituras cuyas columnas o tipos no coinciden con la tabla: es el schema enforcement, que protege la calidad. Si el cambio es intencional, habilitas schema evolution (por ejemplo, mergeSchema) para agregar columnas nuevas.' },
+        { title: 'Schema enforcement y evolution', body: 'Por defecto Delta rechaza escrituras cuyas columnas o tipos no coinciden con la tabla: es el schema enforcement, que protege la calidad. Si el cambio es intencional, habilitas schema evolution en esa operación: .option("mergeSchema", "true") al escribir o MERGE WITH SCHEMA EVOLUTION. La configuración de sesión autoMerge es heredada y no se puede cambiar en serverless.' },
         { title: 'MERGE INTO', body: 'MERGE combina inserciones, actualizaciones y borrados en una sola operación atómica, comparando una fuente con la tabla destino por una condición. Es la herramienta típica para upserts y para cargar cambios sin duplicar filas.' },
-        { title: 'Mantenimiento: OPTIMIZE, clustering y VACUUM', body: 'OPTIMIZE compacta archivos pequeños. Z-ORDER agrupa datos por columnas filtradas con frecuencia; para tablas nuevas Databricks recomienda liquid clustering (CLUSTER BY), más flexible que particionar. VACUUM borra archivos que ya no usa ninguna versión retenida (7 días por defecto), lo que limita el time travel.' },
-        { title: 'Change Data Feed', body: 'Con delta.enableChangeDataFeed = true, Delta registra qué filas se insertaron, actualizaron o borraron en cada versión. Con table_changes puedes leer solo los cambios y propagarlos a otras capas sin releer toda la tabla.' },
+        { title: 'Mantenimiento: OPTIMIZE, clustering y VACUUM', body: 'OPTIMIZE compacta archivos pequeños. Z-ORDER agrupa datos por columnas filtradas con frecuencia; para tablas nuevas Databricks recomienda liquid clustering (CLUSTER BY), que reemplaza a la partición y a Z-ORDER (no se combinan) y permite cambiar las claves sin reescribir. VACUUM borra archivos de datos que ya no usa ninguna versión retenida (delta.deletedFileRetentionDuration, 7 días por defecto), lo que limita el time travel; el historial del log se conserva 30 días por defecto. En tablas administradas de Unity Catalog, predictive optimization puede ejecutar OPTIMIZE y VACUUM por ti.' },
+        { title: 'Change Data Feed', body: 'Con delta.enableChangeDataFeed = true (hoy llamado CDF heredado; existe también un CDF automático basado en row tracking), Delta registra qué filas se insertaron, actualizaron o borraron en cada versión. Con table_changes puedes leer solo los cambios y propagarlos a otras capas sin releer toda la tabla. Los cambios no son permanentes: VACUUM y la retención de la tabla los eliminan.' },
       ],
       example: {
         title: 'Upsert de clientes con MERGE', language: 'sql',
@@ -272,7 +272,7 @@
       references: [
         { label: '¿Qué es Delta Lake?', url: `${MS}/delta/` },
         { label: 'MERGE INTO', url: `${MS}/delta/merge` },
-        { label: 'Liquid clustering', url: `${MS}/delta/clustering` },
+        { label: 'Liquid clustering', url: `${MS}/tables/clustering` },
       ],
     },
     {
@@ -292,9 +292,9 @@
       concepts: [
         { title: 'Qué significa incremental', body: 'Una carga incremental procesa solo los datos que no se procesaron antes. Para eso necesita recordar algo: la última fecha cargada (high-water mark), los archivos ya leídos o un checkpoint. Sin ese estado, la carga o se repite completa o pierde datos.' },
         { title: 'MERGE para cambios', body: 'Cuando la fuente entrega filas nuevas y modificadas, MERGE las aplica sobre la tabla destino por clave. Combinado con un filtro por fecha de actualización, es un patrón incremental simple para tablas que cambian.' },
-        { title: 'COPY INTO para archivos en lote', body: 'COPY INTO carga archivos de una ruta en una tabla Delta y es idempotente: recuerda qué archivos ya cargó y los omite si lo vuelves a ejecutar. Es práctico para miles de archivos, programado en un job.' },
-        { title: 'Auto Loader', body: 'Auto Loader es una fuente de Structured Streaming (cloudFiles) que detecta archivos nuevos en el almacenamiento. Guarda el esquema inferido en schemaLocation y el progreso en un checkpoint. Escala a millones de archivos y maneja la evolución del esquema.' },
-        { title: 'Streaming en modo lote: availableNow', body: 'Con trigger(availableNow=True), un stream procesa todo lo pendiente y se detiene. Así obtienes la lógica incremental del streaming con el costo de un job programado: no necesitas cómputo encendido todo el día.' },
+        { title: 'COPY INTO para archivos en lote', body: 'COPY INTO carga archivos de una ruta en una tabla Delta y es idempotente: recuerda qué archivos ya cargó y los omite si lo vuelves a ejecutar, incluso si cambiaron (force = true desactiva esa protección). Sirve para cargas SQL en lote; para directorios con muchísimos archivos Databricks recomienda Auto Loader o streaming tables.' },
+        { title: 'Auto Loader', body: 'Auto Loader es una fuente de Structured Streaming (cloudFiles) que detecta archivos nuevos en el almacenamiento. Guarda el esquema inferido en schemaLocation y el progreso (en RocksDB) en un checkpoint; cada fuente necesita su propio checkpoint. Escala a miles de millones de archivos. En JSON y CSV infiere columnas como STRING salvo que actives cloudFiles.inferColumnTypes, y con el modo por defecto addNewColumns el stream se detiene ante una columna nueva y debes reiniciarlo.' },
+        { title: 'Streaming en modo lote: availableNow', body: 'Con trigger(availableNow=True), un stream procesa todo lo pendiente y se detiene. Así obtienes la lógica incremental del streaming con el costo de un job programado: no necesitas cómputo encendido todo el día. En serverless (y en Free Edition) solo se admiten availableNow y once; sin trigger el stream falla.' },
       ],
       example: {
         title: 'Ingesta incremental con Auto Loader', language: 'python',
@@ -434,7 +434,7 @@
     {
       id: 's09', number: 9, track: 'delta', minutes: 50,
       title: 'Delta Live Tables (DLT)',
-      brochureNote: 'El brochure lo llama Delta Live Tables; hoy se llama Lakeflow Spark Declarative Pipelines.',
+      brochureNote: 'El brochure lo llama Delta Live Tables; hoy son los pipelines de Lakeflow (Lakeflow Spark Declarative Pipelines, el nombre que usa la guía del examen), basados en Apache Spark Declarative Pipelines.',
       summary: 'Pasas de escribir pasos imperativos a declarar tablas: Lakeflow resuelve el orden, la infraestructura, la calidad de datos y la carga incremental del pipeline.',
       whyItMatters: 'Los pipelines declarativos reducen mucho el código de orquestación y hacen visible la calidad de los datos. Son una pieza central de la certificación Data Engineer Associate.',
       objectives: [
@@ -448,20 +448,20 @@
       ],
       concepts: [
         { title: 'Declarativo frente a imperativo', body: 'En un notebook imperativo dices cómo hacer cada paso y en qué orden. En un pipeline declarativo describes qué tablas deben existir y de dónde salen; el motor deduce las dependencias, ejecuta en el orden correcto y gestiona reintentos y checkpoints.' },
-        { title: 'Streaming tables', body: 'Una streaming table procesa cada registro de la fuente una sola vez, de forma incremental. Es ideal para la capa bronze con Auto Loader (read_files dentro de STREAM) y para transformar datos que solo se agregan.' },
-        { title: 'Materialized views', body: 'Una materialized view guarda el resultado de una consulta y lo mantiene actualizado con cada ejecución del pipeline, recalculando de forma incremental cuando es posible. Encaja con agregaciones de silver y gold.' },
-        { title: 'Expectations', body: 'Una expectation es una regla de calidad sobre cada fila. Con ON VIOLATION puedes solo registrar la falla, descartar la fila (DROP ROW) o detener la actualización (FAIL UPDATE). Las métricas de cuántas filas pasaron o fallaron quedan en el event log.' },
-        { title: 'Ejecución y monitoreo', body: 'Un pipeline puede correr en modo triggered, procesando lo pendiente y deteniéndose, o en modo continuous. Su grafo muestra cada tabla y su estado. En Python el módulo actual es pyspark.pipelines (el anterior era dlt). Free Edition permite un pipeline activo por tipo.' },
+        { title: 'Streaming tables', body: 'Una streaming table procesa cada registro nuevo de una fuente que solo agrega datos una sola vez, de forma incremental. Es ideal para la capa bronze con Auto Loader (read_files dentro de STREAM) y para transformar datos que solo se agregan.' },
+        { title: 'Materialized views', body: 'Una materialized view refleja el estado actual de su consulta, incluidas actualizaciones y borrados de la fuente, y se refresca en cada ejecución del pipeline, de forma incremental cuando es posible. Encaja con agregaciones de silver y gold.' },
+        { title: 'Expectations', body: 'Una expectation es una regla de calidad sobre cada fila. Sin ON VIOLATION solo se registra la falla (warn); con ON VIOLATION puedes descartar la fila (DROP ROW) o detener la actualización (FAIL UPDATE), que revierte la transacción. Las métricas de cuántas filas pasaron o fallaron quedan en los eventos flow_progress del event log.' },
+        { title: 'Ejecución y monitoreo', body: 'Un pipeline corre por defecto en modo triggered, procesando lo pendiente y deteniéndose, o en modo continuous. AUTO CDC (antes APPLY CHANGES) aplica cambios como SCD tipo 1 o 2. Su grafo muestra cada tabla y su estado. En Python usas from pyspark import pipelines as dp (el módulo dlt sigue funcionando, pero ya no se recomienda). Free Edition permite un pipeline activo por tipo.' },
       ],
       example: {
         title: 'Un pipeline de dos tablas en SQL', language: 'sql',
-        code: `-- Bronze: ingesta incremental con Auto Loader\nCREATE OR REFRESH STREAMING TABLE ventas_bronze\nAS SELECT *\nFROM STREAM read_files('/Volumes/<tu_catalogo>/default/raw/ventas_json/', format => 'json');\n\n-- Silver: con reglas de calidad\nCREATE OR REFRESH STREAMING TABLE ventas_silver (\n  CONSTRAINT id_presente EXPECT (id_venta IS NOT NULL) ON VIOLATION DROP ROW,\n  CONSTRAINT monto_valido EXPECT (monto > 0)\n)\nAS SELECT id_venta, CAST(monto AS DOUBLE) AS monto, to_date(fecha) AS fecha\nFROM STREAM ventas_bronze;\n\n-- Gold: agregación mantenida por el pipeline\nCREATE OR REFRESH MATERIALIZED VIEW ventas_por_dia\nAS SELECT fecha, SUM(monto) AS total FROM ventas_silver GROUP BY fecha;`,
+        code: `-- Bronze: ingesta incremental con Auto Loader\nCREATE OR REFRESH STREAMING TABLE ventas_bronze\nAS SELECT *\nFROM STREAM read_files('/Volumes/<tu_catalogo>/default/raw/ventas_json/', format => 'json');\n\n-- Silver: con reglas de calidad\nCREATE OR REFRESH STREAMING TABLE ventas_silver (\n  CONSTRAINT id_presente EXPECT (id_venta IS NOT NULL) ON VIOLATION DROP ROW,\n  CONSTRAINT monto_valido EXPECT (monto > 0)\n)\nAS SELECT id_venta, CAST(monto AS DOUBLE) AS monto, to_date(fecha) AS fecha\nFROM STREAM(ventas_bronze);\n\n-- Gold: agregación mantenida por el pipeline\nCREATE OR REFRESH MATERIALIZED VIEW ventas_por_dia\nAS SELECT fecha, SUM(monto) AS total FROM ventas_silver GROUP BY fecha;`,
         explanation: 'No hay orden de ejecución escrito: el pipeline deduce que ventas_silver depende de ventas_bronze. id_presente descarta filas inválidas, mientras que monto_valido solo las registra en las métricas.',
       },
       exercise: {
         prompt: 'Agrega una regla que detenga todo el pipeline si aparece una fecha nula en ventas_silver. ¿En qué casos preferirías DROP ROW?',
         hint: 'La acción que detiene la actualización es FAIL UPDATE.',
-        solution: { language: 'sql', code: `CREATE OR REFRESH STREAMING TABLE ventas_silver (\n  CONSTRAINT id_presente EXPECT (id_venta IS NOT NULL) ON VIOLATION DROP ROW,\n  CONSTRAINT fecha_presente EXPECT (fecha IS NOT NULL) ON VIOLATION FAIL UPDATE\n)\nAS SELECT id_venta, CAST(monto AS DOUBLE) AS monto, to_date(fecha) AS fecha\nFROM STREAM ventas_bronze;\n\n-- DROP ROW conviene cuando unas pocas filas malas no invalidan el resto;\n-- FAIL UPDATE cuando un dato faltante vuelve incorrecto todo el reporte.` },
+        solution: { language: 'sql', code: `CREATE OR REFRESH STREAMING TABLE ventas_silver (\n  CONSTRAINT id_presente EXPECT (id_venta IS NOT NULL) ON VIOLATION DROP ROW,\n  CONSTRAINT fecha_presente EXPECT (fecha IS NOT NULL) ON VIOLATION FAIL UPDATE\n)\nAS SELECT id_venta, CAST(monto AS DOUBLE) AS monto, to_date(fecha) AS fecha\nFROM STREAM(ventas_bronze);\n\n-- DROP ROW conviene cuando unas pocas filas malas no invalidan el resto;\n-- FAIL UPDATE cuando un dato faltante vuelve incorrecto todo el reporte.` },
       },
       quiz: [
         { question: '¿Cómo se llama hoy lo que el brochure llama Delta Live Tables?', options: ['Lakeflow Spark Declarative Pipelines', 'Lakeflow Jobs', 'Delta Sharing'], answer: 0, explanation: 'DLT pasó a formar parte de Lakeflow como pipelines declarativos.' },
