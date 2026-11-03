@@ -722,7 +722,7 @@
       objectives: [
         'Trabajar con ramas en Git folders.',
         'Usar la CLI y la REST API para automatizar.',
-        'Desplegar un job con un bundle desde GitHub Actions.',
+        "Describir un despliegue opcional con bundles y sus requisitos empresariales.",
       ],
       review: [
         'Git básico: clone, branch, commit, push y pull request.',
@@ -730,19 +730,19 @@
       ],
       concepts: [
         { title: 'Git folders', body: 'Los Git folders (antes Repos) conectan una carpeta del workspace con un repositorio de GitHub, Azure DevOps u otros. Puedes crear ramas, hacer commit y pull desde la interfaz. El código de producción vive en Git, no en una carpeta personal.' },
-        { title: 'Databricks CLI y REST API', body: 'Todo lo que haces en la interfaz tiene una API REST, por ejemplo listar jobs con GET /api/2.2/jobs/list. La CLI envuelve esa API: databricks auth login configura la autenticación y comandos como databricks jobs list automatizan tareas desde la terminal.' },
-        { title: 'Declarative Automation Bundles', body: 'Un bundle describe en un archivo databricks.yml los recursos de un proyecto (jobs, pipelines, dashboards) junto con su código. Defines targets como dev y prod, y con databricks bundle validate, deploy y run llevas el mismo proyecto a cada entorno.' },
-        { title: 'GitHub Actions', body: 'Un workflow de GitHub Actions puede instalar la CLI, validar el bundle en cada pull request y desplegarlo a producción al hacer merge en main. Para autenticarse usa un service principal con OAuth, con sus credenciales guardadas como secretos del repositorio.' },
+        { title: 'Databricks CLI y REST API', body: "La CLI y las API REST automatizan operaciones documentadas, como listar jobs con GET /api/2.2/jobs/list. No toda función de la UI tiene un endpoint equivalente. Consulta el soporte documentado y configura una identidad autorizada antes de usar comandos." },
+        { title: 'Declarative Automation Bundles', body: "Un bundle describe en un archivo databricks.yml los recursos de un proyecto (jobs, pipelines, dashboards) junto con su código. Defines targets como dev y prod, y con databricks bundle validate, deploy y run llevas el mismo proyecto a cada entorno. Validar requiere CLI compatible, autenticación configurada y acceso al workspace; no es solo analizar YAML offline. Validar, desplegar y ejecutar son etapas distintas." },
+        { title: 'GitHub Actions', body: "GitHub Actions puede validar y desplegar bundles con una identidad autorizada. OIDC con un service principal y una política de federación preconfigurada evita exigir secretos de larga duración. OAuth con client secret es otra alternativa, no un requisito universal. Aquí no configuras CI ni autenticación real." },
         { title: 'Flujo de ramas', body: 'Un flujo habitual: cada cambio en una rama de feature, pull request con revisión y validación automática, merge a main y despliegue automático. Los entornos se separan con targets del bundle y con catálogos distintos por entorno.' },
       ],
       example: {
         title: 'Un bundle mínimo con un job', language: 'yaml',
         code: `bundle:\n  name: ventas_etl\n\nresources:\n  jobs:\n    ventas_diario:\n      name: ventas_diario\n      tasks:\n        - task_key: ingesta\n          notebook_task:\n            notebook_path: ./src/ingesta.ipynb\n\ntargets:\n  dev:\n    mode: development\n    default: true\n    workspace:\n      host: https://adb-1234567890123456.7.azuredatabricks.net\n  prod:\n    mode: production\n    workspace:\n      host: https://adb-1234567890123456.7.azuredatabricks.net`,
-        explanation: 'databricks bundle deploy -t dev crea el job con un prefijo personal para no pisar a otros. Con -t prod despliega la versión compartida. El host es un ejemplo: usa la URL de tu workspace.',
+        explanation: "Referencia opcional, no un paso obligatorio en Free Edition ni un bundle listo para ejecutar: falta el notebook del proyecto y deben revisarse cómputo, permisos y targets. No ejecutes validate, deploy ni run aquí. databricks bundle deploy -t dev crea el job con un prefijo personal para no pisar a otros. Con -t prod despliega la versión compartida. El host es un ejemplo: usa la URL de tu workspace.",
       },
       exercise: {
-        prompt: 'Escribe un workflow de GitHub Actions que despliegue el bundle al target prod cada vez que se hace push a main.',
-        hint: 'Usa actions/checkout, la acción databricks/setup-cli y pasa host, client id y client secret como variables de entorno desde secrets.',
+        prompt: "Referencia empresarial opcional: estudia este workflow ilustrativo de despliegue a prod. No lo instales ni ejecutes; no es requisito de Free Edition. Completa el laboratorio determinista para la práctica obligatoria.",
+        hint: "El YAML es una referencia de OAuth con secretos, no una plantilla de producción: faltan pruebas, revisión y aprobación. OIDC requiere una política de federación previa y no exige client secret. Validar necesita CLI, autenticación y workspace; no agregues credenciales ni cambies CI.",
         solution: { language: 'yaml', code: `name: deploy\non:\n  push:\n    branches: [main]\n\njobs:\n  deploy:\n    runs-on: ubuntu-latest\n    steps:\n      - uses: actions/checkout@v4\n      - uses: databricks/setup-cli@main\n      - run: databricks bundle validate -t prod\n      - run: databricks bundle deploy -t prod\n    env:\n      DATABRICKS_HOST: \${{ secrets.DATABRICKS_HOST }}\n      DATABRICKS_CLIENT_ID: \${{ secrets.DATABRICKS_CLIENT_ID }}\n      DATABRICKS_CLIENT_SECRET: \${{ secrets.DATABRICKS_CLIENT_SECRET }}` },
       },
       quiz: [
