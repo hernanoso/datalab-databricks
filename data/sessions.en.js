@@ -560,18 +560,18 @@
       ],
       concepts: [
         { title: 'Administration roles', body: 'The account administrator manages workspaces, metastores, and identities across the account. The workspace administrator manages settings and permissions within a workspace. The metastore administrator controls Unity Catalog objects. Separating these roles applies the principle of least privilege.' },
-        { title: 'Identities and entitlements', body: 'Users, groups, and service principals are preferably managed at the account level and synchronized from Microsoft Entra ID with SCIM. Entitlements define basic capabilities, such as workspace access, Databricks SQL access, or unrestricted cluster creation.' },
-        { title: 'Compute policies', body: 'A compute policy limits how clusters are created: maximum size, machine types, automatic shutdown, and required tags. This lets users create their compute without generating out-of-control costs.' },
+        { title: 'Identities and entitlements', body: "Users, account groups and service principals represent people and automation. Automatic identity management from Microsoft Entra ID is preferred for supported new accounts; SCIM is an alternative. Verify offboarding scope and timing rather than promising universal instant revocation. Entitlements enable workspace capabilities, not data permissions." },
+        { title: 'Compute policies', body: "A compute policy constrains classic compute configurations such as size, automatic termination and tags; Azure requires Premium. It does not retroactively modify existing configurations or set serverless sizes. This is a configuration constraint, but does not guarantee a maximum spend: also review who can create unrestricted compute." },
         { title: 'Row filters and column masks', body: 'A row filter limits which rows each user sees; a column mask hides or transforms sensitive values, such as an email address. Both are SQL functions attached to the table that can check group membership with is_account_group_member.' },
-        { title: 'Tags and auditing', body: 'Tags classify objects and resources (for example, pii=true or cost_center=sales); governed tags restrict which values are valid. The system table system.access.audit records actions such as reads, permission changes, and logins, and can be queried with SQL.' },
+        { title: 'Tags and auditing', body: "Tags classify objects and resources; governed tags restrict valid values. system.access.audit requires platform availability and authorized permissions; Free Edition access is unverified. Consider delivery latency, regional scope and account events with workspace_id = 0. The documented default retention is 365 days, not a guarantee for every audit source." },
       ],
       example: {
         title: 'Masking emails for people outside support', language: 'sql',
         code: `CREATE OR REPLACE FUNCTION <your_catalog>.default.mask_email(email STRING)\nRETURNS STRING\nRETURN CASE\n  WHEN is_account_group_member('support') THEN email\n  ELSE '***@***'\nEND;\n\nALTER TABLE <your_catalog>.default.customers\nALTER COLUMN email SET MASK <your_catalog>.default.mask_email;`,
-        explanation: 'Members of the support group see the real email; everyone else sees a masked value. The rule lives on the table, so it applies equally in notebooks, SQL, and dashboards.',
+        explanation: "Optional advanced example: do not run against shared data. Requires an owned Unity Catalog test table with email, an existing support account group, USE CATALOG/USE SCHEMA, CREATE FUNCTION on the schema, EXECUTE on the function and owner authority to attach the mask. Verify runtime and compute support for masks; Free Edition availability is not guaranteed. The group sees original values and others masked values on supported paths; this does not prove permissions or universal coverage.",
       },
       exercise: {
-        prompt: 'Write a query showing the latest 20 Unity Catalog actions recorded in the audit log, with date, user, and action.',
+        prompt: "Write a query for the latest 20 Unity Catalog actions with date, user and action. Use s11_audit_demo from the lab in Free Edition; system.access.audit is an optional read only with existing authorization and availability. Do not change permissions if it fails.",
         hint: 'Filter service_name = \'unityCatalog\' in system.access.audit and sort by event_time.',
         solution: { language: 'sql', code: `SELECT event_time,\n       user_identity.email AS user,\n       action_name\nFROM system.access.audit\nWHERE service_name = 'unityCatalog'\nORDER BY event_time DESC\nLIMIT 20;` },
       },
@@ -580,7 +580,7 @@
         { question: 'You want only one group to see real emails. What do you use?', options: ['A row filter', 'A column mask', 'VACUUM'], answer: 1, explanation: 'The mask transforms the column value based on who is querying.' },
         { question: 'Where can you query who accessed a table?', options: ['system.access.audit', 'samples.nyctaxi.trips', 'The file name'], answer: 0, explanation: 'The audit table records service actions.' },
         { question: 'Which role manages workspaces and metastores across the account?', options: ['Account administrator', 'SQL user', 'Table owner'], answer: 0, explanation: 'It is the broadest role; it should be assigned to few people.' },
-        { question: 'What does synchronizing identities with SCIM provide?', options: ['Automatic provisioning and deprovisioning from the identity provider', 'Faster Spark performance', 'Smaller files'], answer: 0, explanation: 'Someone who leaves the company in Entra ID also loses Databricks access.' },
+        { question: 'What does synchronizing identities with SCIM provide?', options: ['Automatic provisioning and deprovisioning from the identity provider', 'Faster Spark performance', 'Smaller files'], answer: 0, explanation: "SCIM provides provisioning and deprovisioning from the identity provider as an alternative to automatic identity management on supported accounts. It does not guarantee instant revocation of every session, credential or access; verify offboarding scope and lifecycle." },
       ],
       classQuestions: [
         'Which tags are used in real projects to attribute costs?',
@@ -596,6 +596,7 @@
         { label: 'Compute policies', url: `${MS}/admin/clusters/policies` },
         { label: 'Row filters and column masks', url: `${MS}/tables/row-and-column-filters` },
         { label: 'Audit table', url: `${MS}/admin/system-tables/audit-logs` },
+        { label: 'Microsoft Entra ID / SCIM', url: `${MS}/admin/users-groups/` },
       ],
     },
     {

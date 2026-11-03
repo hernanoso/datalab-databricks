@@ -92,3 +92,39 @@ test('base sessions never hardcode the workspace catalog', () => {
     assert.doesNotMatch(text, /workspace\.default|\/Volumes\/workspace\//, `${lang} hardcodes the workspace catalog`);
   }
 });
+
+for (const lang of ['es', 'en']) {
+  require('../data/sessions.' + lang + '.js');
+  const s10 = globalThis.DataLab.content[lang].find(s => s.id === 's10');
+  const s11 = globalThis.DataLab.content[lang].find(s => s.id === 's11');
+  test(lang + ' B5 base governance qualifies inheritance, lifecycle and effective access', () => {
+    assert.match(s10.concepts[0].body, /catálogo|catalog/);
+    assert.match(s10.concepts[0].body, /propiedad no se hereda|ownership is not inherited/);
+    assert.match(s10.concepts[0].body, /metastore.*no |metastore.*not /);
+    assert.match(s10.concepts[2].body, /recuperación|recovery/);
+    assert.match(s10.concepts[2].body, /gobernad|governed/);
+    assert.match(s10.concepts[4].body, /compatibles|supported/);
+    assert.match(s10.concepts[4].body, /permisos|permissions/);
+    assert.match(s10.example.explanation, /no garantiza|does not guarantee/);
+    assert.match(s10.exercise.prompt, /opcional|optional/i);
+    assert.match(s10.exercise.prompt, /Azure/);
+    assert.match(s10.exercise.hint, /Access Connector/);
+    assert.deepEqual(s10.quiz.map(q => q.answer), [1, 1, 0, 1, 0]);
+  });
+  test(lang + ' B5 base administration qualifies identity, policies, audits and masking', () => {
+    assert.match(s11.concepts[1].body, /Entra ID/);
+    assert.match(s11.concepts[1].body, /automática|Automatic/);
+    assert.match(s11.concepts[1].body, /SCIM.*alternativ/);
+    assert.match(s11.concepts[2].body, /Premium/);
+    assert.match(s11.concepts[2].body, /clásico|classic/);
+    assert.match(s11.concepts[2].body, /retroactiv/);
+    assert.match(s11.concepts[2].body, /no garantiza|not guarantee/);
+    for (const pattern of [/365/, /región|regional/, /latencia|latency/, /permisos|permissions/, /Free Edition/]) assert.match(s11.concepts[4].body, pattern);
+    assert.match(s11.example.explanation, /opcional|optional/i);
+    assert.match(s11.example.explanation, /CREATE FUNCTION/);
+    assert.match(s11.example.explanation, /EXECUTE/);
+    assert.match(s11.exercise.prompt, /s11_audit_demo/);
+    assert.match(s11.quiz[4].explanation, /instantánea|instant/);
+    assert.deepEqual(s11.quiz.map(q => q.answer), [0, 1, 0, 0, 0]);
+  });
+}

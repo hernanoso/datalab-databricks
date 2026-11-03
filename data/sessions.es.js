@@ -560,18 +560,18 @@
       ],
       concepts: [
         { title: 'Roles de administración', body: 'El administrador de cuenta gestiona workspaces, metastores e identidades de toda la cuenta. El administrador de workspace gestiona configuración y permisos dentro de un workspace. El administrador de metastore controla objetos de Unity Catalog. Separarlos aplica el principio de mínimo privilegio.' },
-        { title: 'Identidades y entitlements', body: 'Usuarios, grupos y service principals se administran preferentemente a nivel de cuenta y se sincronizan desde Microsoft Entra ID con SCIM. Los entitlements definen capacidades básicas, como acceso al workspace, a Databricks SQL o la creación de clusters sin restricciones.' },
-        { title: 'Compute policies', body: 'Una compute policy limita cómo se crean clusters: tamaño máximo, tipos de máquina, apagado automático y tags obligatorios. Así los usuarios crean su cómputo sin poder generar costos fuera de control.' },
+        { title: 'Identidades y entitlements', body: "Usuarios, grupos de cuenta y service principals representan personas y automatizaciones. La administración automática de identidades desde Microsoft Entra ID es preferida en cuentas nuevas compatibles; SCIM es una alternativa. Verifica alcance y tiempos de baja, sin prometer revocación instantánea universal. Los entitlements habilitan capacidades del workspace, no sustituyen permisos de datos." },
+        { title: 'Compute policies', body: "Una compute policy restringe configuraciones de cómputo clásico como tamaño, apagado automático y tags; requiere Premium en Azure. No modifica retroactivamente configuraciones existentes ni limita tamaños serverless. Es una restricción de configuración, pero no garantiza un gasto máximo: revisa también quién puede crear cómputo sin política." },
         { title: 'Filtros de fila y máscaras de columna', body: 'Un filtro de fila limita qué filas ve cada usuario; una máscara de columna oculta o transforma valores sensibles, como un correo. Ambos son funciones SQL asociadas a la tabla que pueden consultar la pertenencia a grupos con is_account_group_member.' },
-        { title: 'Tags y auditoría', body: 'Los tags clasifican objetos y recursos (por ejemplo, pii=true o centro_costo=ventas); las governed tags restringen qué valores son válidos. La tabla del sistema system.access.audit registra acciones como lecturas, permisos y logins, y se consulta con SQL.' },
+        { title: 'Tags y auditoría', body: "Los tags clasifican objetos y recursos; las governed tags restringen valores válidos. system.access.audit requiere disponibilidad de plataforma y permisos autorizados; su acceso en Free Edition no está verificado. Considera latencia de entrega, ámbito regional y eventos de cuenta con workspace_id = 0. La retención predeterminada documentada es 365 días, no una garantía para toda fuente de auditoría." },
       ],
       example: {
         title: 'Enmascarar correos para quien no es de soporte', language: 'sql',
         code: `CREATE OR REPLACE FUNCTION <tu_catalogo>.default.enmascarar_email(email STRING)\nRETURNS STRING\nRETURN CASE\n  WHEN is_account_group_member('soporte') THEN email\n  ELSE '***@***'\nEND;\n\nALTER TABLE <tu_catalogo>.default.clientes\nALTER COLUMN email SET MASK <tu_catalogo>.default.enmascarar_email;`,
-        explanation: 'Quien pertenece al grupo soporte ve el correo real; el resto ve un valor enmascarado. La regla vive en la tabla, así que se aplica en notebooks, SQL y dashboards por igual.',
+        explanation: "Ejemplo avanzado opcional: no lo ejecutes sobre datos compartidos. Requiere una tabla Unity Catalog de prueba propia con email, grupo de cuenta soporte existente, USE CATALOG/USE SCHEMA, CREATE FUNCTION en el esquema, EXECUTE sobre la función y autoridad de propietario para adjuntar la máscara. Verifica compatibilidad del runtime y del cómputo con máscaras; no se garantiza en Free Edition. El grupo ve el valor original y los demás el enmascarado en rutas compatibles; no prueba permisos ni cobertura universal.",
       },
       exercise: {
-        prompt: 'Escribe una consulta que muestre las últimas 20 acciones de Unity Catalog registradas en la auditoría, con fecha, usuario y acción.',
+        prompt: "Escribe una consulta de las últimas 20 acciones Unity Catalog con fecha, usuario y acción. Usa s11_audit_demo del laboratorio en Free Edition; system.access.audit es una lectura opcional solo con autorización y disponibilidad previas. No cambies permisos si falla.",
         hint: 'Filtra service_name = \'unityCatalog\' en system.access.audit y ordena por event_time.',
         solution: { language: 'sql', code: `SELECT event_time,\n       user_identity.email AS usuario,\n       action_name\nFROM system.access.audit\nWHERE service_name = 'unityCatalog'\nORDER BY event_time DESC\nLIMIT 20;` },
       },
@@ -580,7 +580,7 @@
         { question: 'Quieres que solo un grupo vea los correos reales. ¿Qué usas?', options: ['Un filtro de fila', 'Una máscara de columna', 'VACUUM'], answer: 1, explanation: 'La máscara transforma el valor de la columna según quién consulta.' },
         { question: '¿Dónde se consulta quién accedió a una tabla?', options: ['system.access.audit', 'samples.nyctaxi.trips', 'El nombre del archivo'], answer: 0, explanation: 'La tabla de auditoría registra acciones de los servicios.' },
         { question: '¿Qué rol gestiona los workspaces y metastores de toda la cuenta?', options: ['Administrador de cuenta', 'Usuario de SQL', 'Propietario de una tabla'], answer: 0, explanation: 'Es el rol de mayor alcance; conviene asignarlo a pocas personas.' },
-        { question: '¿Qué aporta sincronizar identidades con SCIM?', options: ['Altas y bajas automáticas desde el proveedor de identidad', 'Más velocidad en Spark', 'Archivos más pequeños'], answer: 0, explanation: 'Quien deja la empresa en Entra ID pierde también el acceso a Databricks.' },
+        { question: '¿Qué aporta sincronizar identidades con SCIM?', options: ['Altas y bajas automáticas desde el proveedor de identidad', 'Más velocidad en Spark', 'Archivos más pequeños'], answer: 0, explanation: "SCIM permite aprovisionamiento y bajas desde el proveedor, como alternativa a la administración automática de identidades en cuentas compatibles. No garantiza revocación instantánea de toda sesión, credencial o acceso; verifica el ciclo y alcance de baja." },
       ],
       classQuestions: [
         '¿Qué tags se usan en proyectos reales para atribuir costos?',
@@ -596,6 +596,7 @@
         { label: 'Compute policies', url: `${MS}/admin/clusters/policies` },
         { label: 'Filtros de fila y máscaras de columna', url: `${MS}/tables/row-and-column-filters` },
         { label: 'Tabla de auditoría', url: `${MS}/admin/system-tables/audit-logs` },
+        { label: 'Microsoft Entra ID / SCIM', url: `${MS}/admin/users-groups/` },
       ],
     },
     {
