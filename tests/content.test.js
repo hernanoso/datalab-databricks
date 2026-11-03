@@ -83,6 +83,39 @@ for (const s of sessions) {
   });
 }
 
+for (const lang of ['es', 'en']) {
+  require('../data/sessions.' + lang + '.js');
+  const s12 = globalThis.DataLab.content[lang].find(s => s.id === 's12');
+  const s13 = globalThis.DataLab.content[lang].find(s => s.id === 's13');
+  test(lang + ' B6 streaming uses bounded triggers and qualified recovery/event time', () => {
+    assert.match(s12.example.code, /trigger\(availableNow=True\)/);
+    assert.match(s12.exercise.solution.code, /trigger\(availableNow=True\)/);
+    assert.doesNotMatch(s12.example.code, /processingTime=/);
+    assert.match(s12.example.explanation, /opcional|optional/i);
+    for (const pattern of [/Azure/, /Standard/, /serverless/, /autenticación|authentication/, /red|network/]) assert.match(s12.concepts[4].body, pattern);
+    assert.match(s12.concepts[2].body, /origen.*sink|source.*sink/);
+    assert.match(s12.concepts[3].body, /observad|observed/);
+    assert.match(s12.exercise.hint, /event_time/);
+    assert.match(s12.exercise.solution.code, /from_json/);
+    assert.match(s12.exercise.solution.code, /withWatermark\("event_time"/);
+    assert.match(s12.quiz[2].explanation, /observad|observed/);
+    assert.deepEqual(s12.quiz.map(q => q.answer), [0, 0, 0, 0, 0]);
+    assert.equal(s12.quiz[0].options[0], 'Consumer groups');
+  });
+  test(lang + ' B6 BI distinguishes connector scope, freshness and publishing permissions', () => {
+    assert.match(s13.concepts[2].body, /Get data → Databricks → Connect/);
+    assert.match(s13.concepts[2].body, /NO VERIFICADA|UNVERIFIED/);
+    assert.match(s13.concepts[2].body, /XMLA/);
+    assert.match(s13.concepts[3].body, /caché|cach/);
+    assert.doesNotMatch(s13.concepts[3].body, /siempre está al día|always up to date/);
+    assert.match(s13.concepts[0].body, /Share with data permissions/);
+    assert.match(s13.quiz[3].question, /Share with data permissions/);
+    assert.match(s13.quiz[1].explanation, /caché|cach/);
+    assert.deepEqual(s13.quiz.map(q => q.answer), [0, 0, 0, 0, 0]);
+    assert.match(s13.example.code, /samples\.nyctaxi\.trips/);
+  });
+}
+
 // Free Edition does not guarantee a catalog named "workspace": learners find
 // theirs with current_catalog() and replace a placeholder.
 test('base sessions never hardcode the workspace catalog', () => {

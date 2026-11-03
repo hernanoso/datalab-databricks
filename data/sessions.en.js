@@ -672,10 +672,10 @@
         'KPI, dimension, and measure concepts.',
       ],
       concepts: [
-        { title: 'AI/BI dashboards', body: 'A dashboard starts with datasets, which are SQL queries over Unity Catalog tables. You add visualizations and filters on top of them. When publishing, you choose whether readers use your credentials (embedded) or their own, which determines what data each person sees.' },
+        { title: 'AI/BI dashboards', body: 'A dashboard starts with datasets, which are SQL queries over Unity Catalog tables. You add visualizations and filters on top of them. Publish → Share with data permissions shares using publisher data permissions, rather than requiring each viewer to have their own data access. Review the audience and effective access: viewer identity is distinct from whose data permissions are used, and a visual filter does not enforce security.' },
         { title: 'SQL warehouse', body: 'A SQL warehouse is compute optimized for SQL queries and BI. Dashboards and Power BI use it to run queries. Free Edition has one, sized 2X-Small.' },
-        { title: 'Connecting Power BI', body: 'In Power BI Desktop, choose the Azure Databricks connector and enter the SQL warehouse server hostname and HTTP path, found in its Connection details tab. Authentication can use Microsoft Entra ID or a token, and respects Unity Catalog permissions.' },
-        { title: 'Import versus DirectQuery', body: 'Import copies data into Power BI: visualizations are very fast, but data updates only on refresh. DirectQuery queries Databricks on every interaction: it is always up to date but depends on the warehouse. For large tables, aggregate in gold before connecting.' },
+        { title: 'Connecting Power BI', body: 'The generic Desktop path is Get data → Databricks → Connect, with Server Hostname and HTTP Path and environment-supported authentication. Do not assume Free Edition is Azure Databricks: its Power BI connectivity is UNVERIFIED, neither forbidden nor guaranteed, and optional. Unity Catalog, capacity and XMLA requirements of the Power BI service integration are not universal Desktop prerequisites.' },
+        { title: 'Import versus DirectQuery', body: 'Import copies data into Power BI: visualizations are very fast, but data updates only on refresh. DirectQuery sends source queries, but caching, refresh, permissions and warehouse availability affect freshness: it does not guarantee always-current data. For large tables, aggregate in gold before connecting.' },
         { title: 'Designing a good dashboard', body: 'Start with the business question, not the chart. Put KPIs at the top, then trends, and finally details. Use few colors with meaning, and filters for dates and the dimensions the user actually uses.' },
       ],
       example: {
@@ -690,9 +690,9 @@
       },
       quiz: [
         { question: 'Which details do you need to connect Power BI to a SQL warehouse?', options: ['Server hostname and HTTP path', 'Only the table name', 'The ADLS account key'], answer: 0, explanation: 'They are in the warehouse Connection details.' },
-        { question: 'Which Power BI mode queries Databricks on every interaction?', options: ['DirectQuery', 'Import', 'Export to Excel'], answer: 0, explanation: 'DirectQuery does not copy data: it queries it live.' },
+        { question: 'Which Power BI mode sends source queries instead of importing the whole dataset?', options: ['DirectQuery', 'Import', 'Export to Excel'], answer: 0, explanation: 'DirectQuery queries the source; caching, refresh and permissions still affect what users see.' },
         { question: 'Which compute runs dashboard queries?', options: ['A SQL warehouse', 'Event Hubs', 'The integration runtime'], answer: 0, explanation: 'Warehouses are optimized for SQL and BI.' },
-        { question: 'When publishing with embedded credentials, readers...', options: ['See data with the author\'s permissions', 'See nothing', 'Need an Azure account'], answer: 0, explanation: 'Queries run with the credentials of the person who published.' },
+        { question: 'When publishing with Share with data permissions, readers...', options: ['See data with the author\'s permissions', 'See nothing', 'Need an Azure account'], answer: 0, explanation: 'Publisher data permissions are used; review the audience and effective access, not just viewer identity.' },
         { question: 'What should you do before connecting a huge table to BI?', options: ['Aggregate it in the gold layer', 'Convert it to CSV', 'Remove its permissions'], answer: 0, explanation: 'Fewer rows mean faster and cheaper queries.' },
       ],
       classQuestions: [
@@ -702,11 +702,15 @@
       glossary: [
         { term: 'KPI', definition: 'Key performance indicator.' },
         { term: 'SQL warehouse', definition: 'Databricks compute for SQL and BI.' },
-        { term: 'DirectQuery', definition: 'A Power BI mode that queries the source live.' },
+        { term: 'DirectQuery', definition: 'A Power BI mode that queries the source, subject to caching, refresh and permissions.' },
       ],
       references: [
         { label: 'AI/BI dashboards', url: `${MS}/dashboards/` },
         { label: 'Connect Power BI', url: `${MS}/partners/bi/power-bi` },
+        { label: 'Generic Power BI Desktop connector', url: 'https://docs.databricks.com/aws/en/partners/bi/power-bi/desktop' },
+        { label: 'Power BI service integration', url: 'https://docs.databricks.com/aws/en/partners/bi/power-bi/service' },
+        { label: 'Create and publish dashboards', url: 'https://docs.databricks.com/aws/en/dashboards/tutorials/create-dashboard' },
+        { label: 'Free Edition limitations', url: 'https://docs.databricks.com/aws/en/getting-started/free-edition-limitations' },
       ],
     },
     {
