@@ -501,21 +501,21 @@
         'Session 4: managed identity and Access Connector.',
       ],
       concepts: [
-        { title: 'The hierarchy', body: 'The metastore is the top-level container, usually one per region, and is assigned to workspaces. Inside are catalogs, then schemas, and within them tables, views, volumes, functions, and models. Permissions are inherited downward.' },
+        { title: 'The hierarchy', body: "The metastore contains catalogs, then schemas and objects such as tables, views and volumes. Eligible catalog and schema privileges inherit to current and future children; ownership is not inherited. Grants on the metastore do not provide blanket access to all data." },
         { title: 'Storage credential and external location', body: 'A storage credential stores how to authenticate to the cloud, for example with an Access Connector managed identity. An external location combines that credential with a specific abfss path. This means nobody needs keys in notebooks: Unity Catalog decides who can read each path.' },
-        { title: 'Managed and external tables', body: 'In a managed table, Unity Catalog manages the files and their lifecycle: if you drop the table, the data is deleted. In an external table, files live in your external location and dropping the table does not delete them. Managed tables are recommended for new tables.' },
+        { title: 'Managed and external tables', body: "For managed tables, Unity Catalog manages storage and lifecycle, with recovery and deletion following the documented lifecycle: DROP does not guarantee immediate physical erasure. External tables are also governed by Unity Catalog, but users control the files and dropping the table preserves those files." },
         { title: 'GRANT and REVOKE', body: 'To read a table, a group needs USE CATALOG on the catalog, USE SCHEMA on the schema, and SELECT on the table. MODIFY allows writing and CREATE TABLE allows creating objects. Grant permissions to groups, not people, so access is managed by changing membership.' },
-        { title: 'Lineage', body: 'Unity Catalog automatically records which tables, columns, notebooks, and jobs read or write each table. You can see it in the Lineage tab of Catalog Explorer or in system tables such as system.access.table_lineage. It helps analyze the impact of a change.' },
+        { title: 'Lineage', body: "Unity Catalog captures lineage for supported SQL and DataFrame operations, with permissions-filtered visibility and possible delay. Inspect Lineage in Catalog or system.access.table_lineage for impact analysis; an absent node does not prove an absent dependency." },
         { title: 'Delta Sharing', body: 'Delta Sharing shares tables with other organizations without copying them. You create a share containing the tables, a recipient for the receiving party, and grant access. The recipient can use Databricks or open tools such as pandas or Power BI.' },
       ],
       example: {
         title: 'Giving a group read access', language: 'sql',
-        code: `GRANT USE CATALOG ON CATALOG sales TO \`analysts\`;\nGRANT USE SCHEMA ON SCHEMA sales.gold TO \`analysts\`;\nGRANT SELECT ON TABLE sales.gold.sales_by_day TO \`analysts\`;\n\nSHOW GRANTS ON TABLE sales.gold.sales_by_day;\n\n-- Remove access\nREVOKE SELECT ON TABLE sales.gold.sales_by_day FROM \`analysts\`;`,
-        explanation: 'All three GRANT statements are necessary: without USE CATALOG and USE SCHEMA, SELECT is not enough. Group names go in backticks. SHOW GRANTS confirms what was applied.',
+        code: `GRANT USE CATALOG ON CATALOG sales TO \`analysts\`;\nGRANT USE SCHEMA ON SCHEMA sales.gold TO \`analysts\`;\nGRANT SELECT ON TABLE sales.gold.sales_by_day TO \`analysts\`;\n\nSHOW GRANTS ON TABLE sales.gold.sales_by_day;\n\n-- Remove only the direct SELECT\nREVOKE SELECT ON TABLE sales.gold.sales_by_day FROM \`analysts\`;`,
+        explanation: "The three privileges form the reader chain for a non-owner group. Use only an authorized environment with existing test objects and group. REVOKE removes that direct SELECT, but does not guarantee effective denial: inheritance, group membership or ownership capabilities can remain. SHOW GRANTS displays visible grants, not a complete denial test.",
       },
       exercise: {
-        prompt: 'Create an external location for abfss://raw@myaccount.dfs.core.windows.net/ using the course_cred storage credential, and allow the engineers group to read files from it.',
-        hint: 'Use CREATE EXTERNAL LOCATION ... URL ... WITH (STORAGE CREDENTIAL ...) and the READ FILES permission.',
+        prompt: "Optional advanced Azure exercise (may incur costs): design an external location for abfss://raw@myaccount.dfs.core.windows.net/ with course_cred and READ FILES for engineers. This is not a Free Edition requirement and needs no real credentials; the core lab uses managed tables and a volume.",
+        hint: "Execute only in an authorized Azure workspace with a subscription, storage, an Access Connector with suitable roles, existing storage credential and group, CREATE EXTERNAL LOCATION and authority to grant READ FILES. Otherwise solve on paper; do not provision resources or paste secrets. Use CREATE EXTERNAL LOCATION ... URL ... WITH (STORAGE CREDENTIAL ...).",
         solution: { language: 'sql', code: `CREATE EXTERNAL LOCATION IF NOT EXISTS course_raw\nURL 'abfss://raw@myaccount.dfs.core.windows.net/'\nWITH (STORAGE CREDENTIAL course_cred)\nCOMMENT 'Course raw zone';\n\nGRANT READ FILES ON EXTERNAL LOCATION course_raw TO \`engineers\`;` },
       },
       quiz: [
@@ -538,6 +538,10 @@
       references: [
         { label: 'What is Unity Catalog?', url: `${MS}/data-governance/unity-catalog/` },
         { label: 'Delta Sharing', url: `${MS}/delta-sharing/` },
+        { label: 'Inheritance and effective access', url: `${MS}/data-governance/unity-catalog/access-control/permissions-concepts` },
+        { label: 'Managed and external', url: `${MS}/data-governance/unity-catalog/managed-versus-external` },
+        { label: 'Supported lineage and visibility', url: `${MS}/data-governance/unity-catalog/data-lineage/` },
+        { label: 'Azure storage with Access Connector', url: `${MS}/connect/unity-catalog/cloud-storage/azure-managed-identities` },
       ],
     },
     {

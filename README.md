@@ -17,7 +17,8 @@ syllabus. It is not official Databricks or Smart Data material.
 - Deep content, session by session: a sourced deep dive, an architecture
   diagram, a comparison table, a step-by-step guided lab for Databricks Free
   Edition and about ten original certification practice questions with their
-  own best score. Session 1 is available; the rest arrive in blocks.
+  own best score. Sessions 1 through 10 have expanded content in
+  Spanish and English; the remaining sessions arrive in later slices.
 - Interactive "where do you click?" questions and highlighted lab steps on an
   original, simplified illustration of the Databricks interface
   (`lib/mockui.js`); they are not screenshots and may differ from the real UI.
