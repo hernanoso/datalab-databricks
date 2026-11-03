@@ -22,6 +22,11 @@ test('the course opens in Spanish unless the student chose English', () => {
   assert.equal(resolveLanguage('en', 'es-CO'), 'en');
 });
 
+test('the home action identifies the first pending session without promising reading resumption', () => {
+  assert.equal(t('es', 'resume', { number: 3 }), 'Primera sesión pendiente: 3');
+  assert.equal(t('en', 'resume', { number: 3 }), 'First pending session: 3');
+});
+
 test('translations interpolate parameters and fall back to the missing key', () => {
   assert.equal(t('es', 'sessionNumber', { number: 3 }), 'Sesión 3');
   assert.equal(t('en', 'sessionNumber', { number: 3 }), 'Session 3');
