@@ -116,6 +116,51 @@ for (const lang of ['es', 'en']) {
   });
 }
 
+for (const lang of ['es', 'en']) {
+  const get = id => globalThis.DataLab.content[lang].find(s => s.id === id);
+  test(lang + ' B7 CI distinguishes supported APIs, authenticated validation and optional deployment', () => {
+    const s = get('s14');
+    assert.doesNotMatch(s.concepts[1].body, /Todo lo que|Everything you/);
+    assert.match(s.concepts[1].body, /documentad|documented/);
+    for (const p of [/CLI/, /autenticación|authentication/, /workspace/]) assert.match(s.concepts[2].body, p);
+    assert.match(s.concepts[3].body, /OIDC/);
+    assert.match(s.concepts[3].body, /política|policy/);
+    assert.match(s.example.explanation, /opcional|optional/i);
+    assert.match(s.exercise.prompt, /opcional|optional/i);
+    assert.match(s.exercise.hint, /OIDC/);
+    assert.match(s.exercise.hint, /referencia|reference/);
+    assert.match(s.example.code, /targets:/);
+    assert.deepEqual(s.quiz.map(q => q.answer), [0, 0, 0, 0, 0]);
+  });
+  test(lang + ' B7 GenAI qualifies inference, credentials, sampling and costs', () => {
+    const s = get('s15');
+    assert.match(s.whyItMatters, /acreditación|accreditation/);
+    assert.match(s.quiz[1].explanation, /no garantiza|not guarantee/);
+    for (const p of [/inferencia|inference/, /región|region/, /cuota|quota/]) assert.match(s.concepts[3].body, p);
+    for (const p of [/opcional|optional/i, /LIMIT/, /no es|not a/, /cómputo|compute/]) assert.match(s.example.explanation, p);
+    assert.match(s.exercise.prompt, /opcional|optional/i);
+    assert.match(s.exercise.prompt, /sin inferencia|without inference/);
+    assert.match(s.example.code, /ai_classify/);
+    assert.deepEqual(s.quiz.map(q => q.answer), [0, 0, 0, 0, 0]);
+  });
+  test(lang + ' B7 agents separate schema, dispatch, optional infrastructure and trace coverage', () => {
+    const s = get('s16');
+    assert.match(s.summary, /opcional|optional/i);
+    for (const p of [/valid/, /autorización|authorization/, /despach|dispatch/]) assert.match(s.concepts[0].body, p);
+    assert.match(s.concepts[1].body, /no ejecuta|does not execute/);
+    assert.match(s.concepts[2].body, /instrument/);
+    assert.match(s.concepts[2].body, /auditoría|audit/);
+    assert.match(s.concepts[3].body, /opcional|optional/i);
+    assert.match(s.example.explanation, /no garantiza|not guarantee/);
+    assert.equal(s.exercise.solution.language, 'text');
+    assert.doesNotMatch(s.exercise.solution.code, /WorkspaceClient|completions\.create|spark\.sql/);
+    assert.match(s.exercise.solution.code, /sales_total/);
+    assert.match(s.exercise.prompt, /simulación|simulation/i);
+    assert.match(s.example.code, /RETURNS TABLE/);
+    assert.deepEqual(s.quiz.map(q => q.answer), [0, 0, 0, 0, 0]);
+  });
+}
+
 // Free Edition does not guarantee a catalog named "workspace": learners find
 // theirs with current_catalog() and replace a placeholder.
 test('base sessions never hardcode the workspace catalog', () => {

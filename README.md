@@ -17,22 +17,25 @@ syllabus. It is not official Databricks or Smart Data material.
 - Deep content, session by session: a sourced deep dive, an architecture
   diagram, a comparison table, a step-by-step guided lab for Databricks Free
   Edition and about ten original certification practice questions with their
-  own best score. Sessions 1 through 15 have expanded content in
-  Spanish and English; the remaining sessions arrive in later slices.
+  own best score. All 16 sessions now have expanded content in Spanish and English.
   Session 12 uses a synthetic Python stream-processing simulation, not a live
   Event Hubs connection; real Azure streaming is optional and needs compatible
-  compute, networking and authentication.
-  Session 13 uses synthetic temporary SQL data; Power BI connectivity from
-  Free Edition is unverified, not required. DirectQuery freshness depends
-  on caching, refresh and permissions.
-  Session 14 uses an offline CI eligibility simulation, not real deployment.
-  Bundle validation requires CLI/authentication/workspace access; deployment
-  workflows are optional references, not Free Edition requirements.
-  Session 15 uses fixed JSON classifications without inference. Networked AI
-  examples are optional; inference has separate charges and availability,
-  region and quota constraints. SQL LIMIT is not a hard spending guard.
-  Low temperature guarantees neither correctness nor reproducibility.
-  Fundamentals is an accreditation, not the AI Engineer certification.
+  compute, networking and authentication. Session 13 uses synthetic temporary
+  SQL data; Power BI connectivity from Free Edition is unverified, not required.
+  DirectQuery freshness still depends on caching, refresh and permissions.
+  Sessions 14–16 use offline Python simulations: a CI eligibility gate, fixed
+  JSON classifications and a scripted tool loop—not real deployment, inference
+  or autonomous reasoning. Their required labs need no secrets, network or paid
+  resources. Bundle validation requires CLI/authentication/workspace access;
+  deployment workflows and networked AI examples are optional references, not
+  Free Edition requirements or production security/CI implementations.
+  Low temperature does not guarantee correctness or reproducibility; inference
+  has separate charges and availability/region/quota constraints, and final
+  SQL LIMIT is not a hard spending guard. Tool schemas grant neither execution
+  nor authorization; applications must validate and explicitly dispatch proposals.
+  Traces are not universal audit logs. Apps/Lakebase are optional choices and
+  deployment routes vary. Fundamentals is an accreditation, distinct from the
+  Generative AI Engineer Associate certification.
 - Interactive "where do you click?" questions and highlighted lab steps on an
   original, simplified illustration of the Databricks interface
   (`lib/mockui.js`); they are not screenshots and may differ from the real UI.
