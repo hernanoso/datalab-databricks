@@ -17,7 +17,7 @@ syllabus. It is not official Databricks or Smart Data material.
 - Deep content, session by session: a sourced deep dive, an architecture
   diagram, a comparison table, a step-by-step guided lab for Databricks Free
   Edition and about ten original certification practice questions with their
-  own best score. Sessions 1 through 14 have expanded content in
+  own best score. Sessions 1 through 15 have expanded content in
   Spanish and English; the remaining sessions arrive in later slices.
   Session 12 uses a synthetic Python stream-processing simulation, not a live
   Event Hubs connection; real Azure streaming is optional and needs compatible
@@ -28,6 +28,11 @@ syllabus. It is not official Databricks or Smart Data material.
   Session 14 uses an offline CI eligibility simulation, not real deployment.
   Bundle validation requires CLI/authentication/workspace access; deployment
   workflows are optional references, not Free Edition requirements.
+  Session 15 uses fixed JSON classifications without inference. Networked AI
+  examples are optional; inference has separate charges and availability,
+  region and quota constraints. SQL LIMIT is not a hard spending guard.
+  Low temperature guarantees neither correctness nor reproducibility.
+  Fundamentals is an accreditation, not the AI Engineer certification.
 - Interactive "where do you click?" questions and highlighted lab steps on an
   original, simplified illustration of the Databricks interface
   (`lib/mockui.js`); they are not screenshots and may differ from the real UI.

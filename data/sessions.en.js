@@ -771,7 +771,7 @@
       id: 's15', number: 15, track: 'ia', minutes: 50,
       title: 'Generative AI with Databricks',
       summary: 'You understand what an LLM is and how to use it in Databricks: Playground for experiments, model serving to expose models, ai_query to use them from SQL, and Genie for natural-language questions.',
-      whyItMatters: 'Generative AI is already part of working with data: summarizing text, classifying comments, or querying tables in natural language. This session prepares you for the Generative AI Fundamentals certification.',
+      whyItMatters: "Generative AI supports summarizing text, classifying comments and querying tables in natural language. Generative AI Fundamentals is an accreditation, distinct from the Generative AI Engineer Associate certification in the extended practice.",
       objectives: [
         'Explain tokens, context windows, temperature, and hallucinations.',
         'Try models in AI Playground and understand a serving endpoint.',
@@ -783,24 +783,24 @@
       ],
       concepts: [
         { title: 'What an LLM is', body: 'A large language model predicts the next text fragment (token) from what came before. Its context window limits how much text it considers. Temperature controls how varied the responses are. It can hallucinate: generate something convincing but false, so it must be validated.' },
-        { title: 'Prompts', body: 'A good prompt provides a role, context, task, output format, and examples. Requesting structured output, such as JSON or a single label, makes it easier to use the response in a pipeline. Giving the model relevant data reduces hallucinations.' },
+        { title: 'Prompts', body: "A good prompt provides a role, context, task, output format, and examples. Requesting structured output, such as JSON or a single label, makes it easier to use the response in a pipeline. Giving the model relevant data reduces hallucinations. Relevant context still does not guarantee correctness: parse JSON and validate types, keys and outcomes." },
         { title: 'AI Playground and model serving', body: 'AI Playground lets you chat with several models and compare responses without code. A model serving endpoint exposes a model through an API: it can be a Databricks foundation model (pay per token), an external model, or your own. Free Edition has endpoint limits and does not offer GPUs.' },
-        { title: 'ai_query and AI Functions', body: 'ai_query calls a serving endpoint from SQL, row by row. There are ready-made functions such as ai_classify, ai_extract, and ai_summarize. This lets you apply AI to an entire table within a pipeline without leaving SQL.' },
+        { title: 'ai_query and AI Functions', body: "ai_query calls a serving endpoint from SQL, row by row. There are ready-made functions such as ai_classify, ai_extract, and ai_summarize. This lets you apply AI to an entire table within a pipeline without leaving SQL. These are real inference calls: check model availability, region, permissions and quotas. Inference charges are separate from compute; a final LIMIT is not a hard spending cap." },
         { title: 'Genie', body: 'A Genie space lets business users ask natural-language questions and receive the SQL query and its result. You configure it with Unity Catalog tables, instructions, and sample queries; quality depends heavily on good table names and comments.' },
       ],
       example: {
         title: 'Classifying comments with AI from SQL', language: 'sql',
         code: `SELECT comment,\n       ai_classify(comment, ARRAY('positive', 'negative', 'neutral')) AS sentiment,\n       ai_query(\n         'databricks-meta-llama-3-3-70b-instruct',  -- use an endpoint from your Serving page\n         CONCAT('Summarize in one sentence in English: ', comment)\n       ) AS summary\nFROM <your_catalog>.default.customer_comments\nLIMIT 20;`,
-        explanation: 'ai_classify chooses one of the given labels; ai_query sends a custom prompt to a model. Start with LIMIT to control cost, and check Serving to see which endpoints exist in your workspace.',
+        explanation: "Optional network reference: ai_classify and ai_query invoke real inference. Before any authorized use check model/endpoint, region, authentication, permissions, quotas and pricing. Inference charges are separate from compute. LIMIT is not a hard cap on calls or spending. Do not execute this SQL for required practice; use the offline lab without inference.",
       },
       exercise: {
-        prompt: 'Write a prompt to extract the mentioned product and urgency (high, medium, or low) from a comment, with JSON output. Try it in AI Playground with three invented comments.',
+        prompt: "Write a prompt on paper to extract product and urgency as JSON. Trying it in AI Playground is an optional network activity after access and cost review, not required inference. For practice without inference use the three offline lab fixtures.",
         hint: 'Specify the exact output format and what to do if no product is mentioned.',
         solution: { language: 'text', code: `You are a support assistant. Analyze the customer comment.\nReturn only JSON in this format:\n{"product": "<name or null>", "urgency": "high" | "medium" | "low"}\nHigh urgency: the customer cannot use the service. Medium: it works with problems. Low: a question or suggestion.\nIf no product is mentioned, use null.\n\nComment: "The payments app has not opened since yesterday and I need to collect payments today."` },
       },
       quiz: [
         { question: 'What is an LLM hallucination?', options: ['A convincing but false response', 'A network error', 'A model without a GPU'], answer: 0, explanation: 'The model generates probable text, not necessarily true text.' },
-        { question: 'What does temperature control?', options: ['How varied the responses are', 'The storage cost', 'The number of users'], answer: 0, explanation: 'A low temperature gives more deterministic responses.' },
+        { question: 'What does temperature control?', options: ['How varied the responses are', 'The storage cost', 'The number of users'], answer: 0, explanation: "Low temperature may reduce variation but does not guarantee reproducibility, correctness or safety." },
         { question: 'Which function calls a serving endpoint from SQL?', options: ['ai_query', 'read_files', 'table_changes'], answer: 0, explanation: 'ai_query sends each row to the specified model.' },
         { question: 'What does Genie do?', options: ['Answers natural-language questions by generating SQL over your tables', 'Compresses Delta tables', 'Schedules jobs'], answer: 0, explanation: 'Genie translates business questions into SQL queries.' },
         { question: 'Where can you compare several models without writing code?', options: ['AI Playground', 'Catalog Explorer', 'Data Factory'], answer: 0, explanation: 'Playground is the space for experimenting with models.' },

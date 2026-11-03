@@ -771,7 +771,7 @@
       id: 's15', number: 15, track: 'ia', minutes: 50,
       title: 'IA Generativa con Databricks',
       summary: 'Entiendes qué es un LLM y cómo usarlo en Databricks: Playground para experimentar, model serving para exponer modelos, ai_query para usarlos desde SQL y Genie para preguntar en lenguaje natural.',
-      whyItMatters: 'La IA generativa ya forma parte del trabajo con datos: resumir textos, clasificar comentarios o consultar tablas en lenguaje natural. Esta sesión prepara la certificación Generative AI Fundamentals.',
+      whyItMatters: "La IA generativa permite resumir textos, clasificar comentarios y consultar tablas en lenguaje natural. Generative AI Fundamentals es una acreditación, distinta de la certificación Generative AI Engineer Associate de la práctica ampliada.",
       objectives: [
         'Explicar tokens, ventana de contexto, temperatura y alucinaciones.',
         'Probar modelos en AI Playground y entender un serving endpoint.',
@@ -783,24 +783,24 @@
       ],
       concepts: [
         { title: 'Qué es un LLM', body: 'Un modelo de lenguaje grande predice el siguiente fragmento de texto (token) a partir de lo anterior. Su ventana de contexto limita cuánto texto considera. La temperatura controla cuán variadas son las respuestas. Puede alucinar: generar algo convincente pero falso, por eso se valida.' },
-        { title: 'Prompts', body: 'Un buen prompt da rol, contexto, tarea, formato de salida y ejemplos. Pedir una salida estructurada, como JSON o una sola etiqueta, facilita usar la respuesta en un pipeline. Darle al modelo los datos relevantes reduce las alucinaciones.' },
+        { title: 'Prompts', body: "Un buen prompt da rol, contexto, tarea, formato de salida y ejemplos. Pedir una salida estructurada, como JSON o una sola etiqueta, facilita usar la respuesta en un pipeline. Darle al modelo los datos relevantes reduce las alucinaciones. Aun con contexto relevante no se garantiza exactitud: analiza el JSON y valida tipos, claves y resultados." },
         { title: 'AI Playground y model serving', body: 'AI Playground permite chatear con varios modelos y comparar respuestas sin código. Un model serving endpoint expone un modelo por API: puede ser un modelo fundacional de Databricks (pago por token), un modelo externo o uno propio. Free Edition tiene límites de endpoints y no ofrece GPU.' },
-        { title: 'ai_query y AI Functions', body: 'ai_query llama a un serving endpoint desde SQL, fila por fila. Hay funciones listas como ai_classify, ai_extract o ai_summarize. Así aplicas IA a una tabla completa dentro de un pipeline, sin salir de SQL.' },
+        { title: 'ai_query y AI Functions', body: "ai_query llama a un serving endpoint desde SQL, fila por fila. Hay funciones listas como ai_classify, ai_extract o ai_summarize. Así aplicas IA a una tabla completa dentro de un pipeline, sin salir de SQL. Son llamadas de inferencia reales: verifica disponibilidad del modelo, región, permisos y cuotas. Los cargos de inferencia son independientes del cómputo; un LIMIT final no es un tope estricto de gasto." },
         { title: 'Genie', body: 'Un espacio de Genie permite que usuarios de negocio pregunten en lenguaje natural y reciban la consulta SQL y su resultado. Lo configuras con tablas de Unity Catalog, instrucciones y consultas de ejemplo; la calidad depende mucho de buenos nombres y comentarios en las tablas.' },
       ],
       example: {
         title: 'Clasificar comentarios con IA desde SQL', language: 'sql',
         code: `SELECT comentario,\n       ai_classify(comentario, ARRAY('positivo', 'negativo', 'neutral')) AS sentimiento,\n       ai_query(\n         'databricks-meta-llama-3-3-70b-instruct',  -- usa un endpoint de tu página Serving\n         CONCAT('Resume en una frase en español: ', comentario)\n       ) AS resumen\nFROM <tu_catalogo>.default.comentarios_clientes\nLIMIT 20;`,
-        explanation: 'ai_classify elige una de las etiquetas dadas; ai_query envía un prompt propio a un modelo. Empieza con LIMIT para controlar el costo, y revisa en Serving qué endpoints existen en tu workspace.',
+        explanation: "Referencia de red opcional: ai_classify y ai_query invocan inferencia real. Antes de cualquier uso autorizado revisa modelo/endpoint, región, autenticación, permisos, cuotas y precios. Los cargos de inferencia son independientes del cómputo. LIMIT no es un tope estricto de llamadas ni gasto. No ejecutes este SQL en la práctica obligatoria; usa el laboratorio local sin inferencia.",
       },
       exercise: {
-        prompt: 'Escribe un prompt para extraer de un comentario el producto mencionado y la urgencia (alta, media o baja), con salida JSON. Pruébalo en AI Playground con tres comentarios inventados.',
+        prompt: "Escribe en papel un prompt para extraer producto y urgencia con salida JSON. Probarlo en AI Playground es una actividad de red opcional con revisión previa de acceso y costo, no una inferencia obligatoria. Para practicar sin inferencia usa las tres muestras del laboratorio local.",
         hint: 'Indica el formato exacto de salida y qué hacer si no se menciona un producto.',
         solution: { language: 'text', code: `Eres un asistente de soporte. Analiza el comentario del cliente.\nDevuelve solo JSON con este formato:\n{"producto": "<nombre o null>", "urgencia": "alta" | "media" | "baja"}\nUrgencia alta: el cliente no puede usar el servicio. Media: funciona con problemas. Baja: consulta o sugerencia.\nSi no se menciona un producto, usa null.\n\nComentario: "Desde ayer la app de pagos no abre y tengo que cobrar hoy."` },
       },
       quiz: [
         { question: '¿Qué es una alucinación de un LLM?', options: ['Una respuesta convincente pero falsa', 'Un error de red', 'Un modelo sin GPU'], answer: 0, explanation: 'El modelo genera texto probable, no necesariamente verdadero.' },
-        { question: '¿Qué controla la temperatura?', options: ['Cuán variadas son las respuestas', 'El costo del almacenamiento', 'La cantidad de usuarios'], answer: 0, explanation: 'Una temperatura baja da respuestas más deterministas.' },
+        { question: '¿Qué controla la temperatura?', options: ['Cuán variadas son las respuestas', 'El costo del almacenamiento', 'La cantidad de usuarios'], answer: 0, explanation: "Una temperatura baja puede reducir variación, pero no garantiza reproducibilidad, exactitud ni seguridad." },
         { question: '¿Qué función llama a un serving endpoint desde SQL?', options: ['ai_query', 'read_files', 'table_changes'], answer: 0, explanation: 'ai_query envía cada fila al modelo indicado.' },
         { question: '¿Qué hace Genie?', options: ['Responde preguntas en lenguaje natural generando SQL sobre tus tablas', 'Comprime tablas Delta', 'Programa jobs'], answer: 0, explanation: 'Genie traduce preguntas de negocio a consultas SQL.' },
         { question: '¿Dónde comparas varios modelos sin escribir código?', options: ['AI Playground', 'Catalog Explorer', 'Data Factory'], answer: 0, explanation: 'El Playground es el espacio de experimentación con modelos.' },
